@@ -30,22 +30,38 @@ async function fetchPlatform(platform, query, country) {
   const { host, key } = API_KEYS[platform];
   const url = `https://${host}/search?query=${encodeURIComponent(query)}&country=${country}`;
   try {
-    const res = await fetch(url, { headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key } });
+    const res  = await fetch(url, { headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key } });
     const json = await res.json();
     const items = json.data?.products || [];
-    return items.map(p => ({
-      title: p.product_title || p.title,
-      price: p.product_price || p.price?.raw || 'N/A',
-      image: p.product_photo  || p.thumbnail  || '',
-      url:   p.product_url    || p.url        || '#',
-      brand: p.product_brand  || p.brand      || '',
-      discount: p.discount || p.discountPercentage || ''
-    }));
+
+    return items.map(p => {
+      // pick the brand field depending on platform
+      let brand = '';
+      if (platform === 'flipkart') {
+        // Flipkart often nests details in productBaseInfoV1
+        brand = p.productBaseInfoV1?.productBrand 
+             || p.productBaseInfoV1?.productTitle 
+             || '';
+      } else {
+        // Amazon & others
+        brand = p.product_brand || p.brand || '';
+      }
+
+      return {
+        title:    p.product_title || p.title,
+        price:    p.product_price || p.price?.raw || 'N/A',
+        image:    p.product_photo  || p.thumbnail  || '',
+        url:      p.product_url    || p.url        || '#',
+        brand:    brand,
+        discount: p.discount       || p.discountPercentage || ''
+      };
+    });
   } catch (e) {
     console.error(`Error ${platform}:`, e);
     return [];
   }
 }
+
 
 // Main search
 async function searchProducts() {
