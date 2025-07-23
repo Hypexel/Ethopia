@@ -1,15 +1,15 @@
-const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e';
+const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e'; // your real RapidAPI key
 const apiHost = 'real-time-amazon-data.p.rapidapi.com';
 
-async function fetchInfluencerProducts() {
-  const influencerName = document.getElementById('influencerInput').value.trim();
-  if (!influencerName) return alert("Please enter an influencer name.");
+async function searchProducts() {
+  const query = document.getElementById('searchInput').value.trim();
+  if (!query) return alert("Enter a product name");
 
   const resultsDiv = document.getElementById('results');
   resultsDiv.innerHTML = "<p>Loading...</p>";
 
   try {
-    const url = `https://${apiHost}/influencer-profile?influencer_name=${influencerName}&country=US`;
+    const url = `https://${apiHost}/search?query=${encodeURIComponent(query)}&country=US`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -22,14 +22,14 @@ async function fetchInfluencerProducts() {
     const data = await response.json();
     const products = data?.data?.products || [];
 
-    displayProducts(products);
+    displayResults(products);
   } catch (error) {
     console.error(error);
-    resultsDiv.innerHTML = "<p>Error fetching products. Check console.</p>";
+    resultsDiv.innerHTML = "<p>Error loading results.</p>";
   }
 }
 
-function displayProducts(products) {
+function displayResults(products) {
   const resultsDiv = document.getElementById('results');
   resultsDiv.innerHTML = "";
 
