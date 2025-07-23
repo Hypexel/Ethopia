@@ -35,25 +35,48 @@ async function fetchPlatform(platform, query, country) {
     const items = json.data?.products || [];
 
     return items.map(p => {
-      // pick the brand field depending on platform
+      // Titles, images, urls unchanged...
+      const title = p.product_title || p.title;
+      const image = p.product_photo  || p.thumbnail  || '';
+      const url   = p.product_url    || p.url        || '#';
+
+      // Price parsing
+      let rawPrice = p.product_price;
+      let listPrice = null;
+      if (!rawPrice && p.price?.raw) rawPrice = p.price.raw;
+
+      // Compute discount
+      let discount = '';
+      if (platform === 'flipkart' && p.productBaseInfoV1) {
+        // Flipkart: compare MRP vs special price
+        const base = p.productBaseInfoV1;
+        const mrp = base.maximumRetailPrice?.amount;
+        const sp  = base.flipkartSpecialPrice?.amount;
+        if (mrp && sp && mrp > sp) {
+          discount = `-${Math.round((mrp - sp) / mrp * 100)}%`;
+        }
+      } else if (platform === 'amazon' && p.price?.savings) {
+        // Amazon: savings contains percentage
+        discount = p.price.savings.percentage
+          ? `-${p.price.savings.percentage}%`
+          : '';
+      }
+
+      // Brand extraction
       let brand = '';
       if (platform === 'flipkart') {
-        // Flipkart often nests details in productBaseInfoV1
-        brand = p.productBaseInfoV1?.productBrand 
-             || p.productBaseInfoV1?.productTitle 
-             || '';
+        brand = p.productBaseInfoV1?.productBrand || '';
       } else {
-        // Amazon & others
         brand = p.product_brand || p.brand || '';
       }
 
       return {
-        title:    p.product_title || p.title,
-        price:    p.product_price || p.price?.raw || 'N/A',
-        image:    p.product_photo  || p.thumbnail  || '',
-        url:      p.product_url    || p.url        || '#',
-        brand:    brand,
-        discount: p.discount       || p.discountPercentage || ''
+        title,
+        price: rawPrice || 'N/A',
+        image,
+        url,
+        brand,
+        discount
       };
     });
   } catch (e) {
