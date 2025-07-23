@@ -1,0 +1,14 @@
+body {
+  font-family: sans-serif;
+  background: #fff;
+  color: #111;
+}
+body.dark {
+  background: #111;
+  color: #eee;
+}
+.card {
+  border: 1px solid #ccc;
+  padding: 1em;
+  margin: 1em;
+}
