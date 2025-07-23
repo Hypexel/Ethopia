@@ -1,37 +1,102 @@
-async function search() {
-  const query = document.getElementById("search").value;
+const RAPIDAPI_KEY = "your_rapidapi_key_here"; // Replace with your key
 
-  // Example API call (from RapidAPI or similar)
-  const amazon = await fetch(`https://example.com/amazon?q=${query}`, { headers: { "X-RapidAPI-Key": "your_key" } });
-  const ebay = await fetch(`https://example.com/ebay?q=${query}`, { headers: { "X-RapidAPI-Key": "your_key" } });
+async function searchProducts() {
+  const query = document.getElementById("search").value.trim();
+  if (!query) return;
 
-  const amazonData = await amazon.json();
-  const ebayData = await ebay.json();
+  const resultsContainer = document.getElementById("results");
+  resultsContainer.innerHTML = "🔍 Searching...";
 
-  renderResults(mergeAndSort(amazonData, ebayData));
+  try {
+    const [amazonData, ebayData] = await Promise.all([
+      fetchAmazon(query),
+      fetchEbay(query),
+    ]);
+
+    const merged = mergeAndSort([...amazonData, ...ebayData]);
+
+    if (merged.length === 0) {
+      resultsContainer.innerHTML = "No products found.";
+      return;
+    }
+
+    resultsContainer.innerHTML = merged.map(renderCard).join("");
+  } catch (err) {
+    console.error(err);
+    resultsContainer.innerHTML = "❌ Error fetching results.";
+  }
 }
 
-function mergeAndSort(a, b) {
-  return [...a, ...b].sort((x, y) => x.price - y.price);
+async function fetchAmazon(query) {
+  const res = await fetch(`https://amazon23.p.rapidapi.com/product-search?query=${query}&page=1&country=IN`, {
+    headers: {
+      "X-RapidAPI-Key": RAPIDAPI_KEY,
+      "X-RapidAPI-Host": "amazon23.p.rapidapi.com"
+    }
+  });
+  const json = await res.json();
+  return (json?.result || []).map(item => ({
+    id: item.asin,
+    title: item.title,
+    price: parseFloat(item.price?.raw?.replace(/[^0-9.]/g, '') || 0),
+    rating: item.rating || 0,
+    image: item.thumbnail,
+    url: item.url
+  }));
 }
 
-function renderResults(items) {
-  const results = document.getElementById("results");
-  results.innerHTML = items.map(item => `
+async function fetchEbay(query) {
+  const res = await fetch(`https://ebay-data-scraper.p.rapidapi.com/search/${query}`, {
+    headers: {
+      "X-RapidAPI-Key": RAPIDAPI_KEY,
+      "X-RapidAPI-Host": "ebay-data-scraper.p.rapidapi.com"
+    }
+  });
+  const json = await res.json();
+  return (json?.data || []).map(item => ({
+    id: item.id,
+    title: item.title,
+    price: parseFloat(item.price?.replace(/[^0-9.]/g, '') || 0),
+    rating: item.rating || 0,
+    image: item.image,
+    url: item.url
+  }));
+}
+
+function mergeAndSort(products) {
+  const unique = new Map();
+  products.forEach(p => {
+    if (p.title && p.price > 0 && !unique.has(p.title)) {
+      unique.set(p.title, p);
+    }
+  });
+  return Array.from(unique.values()).sort((a, b) => a.price - b.price);
+}
+
+function renderCard(item) {
+  return `
     <div class="card">
-      <img src="${item.image}" />
+      <img src="${item.image}" alt="${item.title}">
       <h3>${item.title}</h3>
-      <p>Price: ₹${item.price}</p>
-      <p>Rating: ${item.rating}</p>
-      <button onclick="saveToFavorites('${item.id}')">❤️</button>
+      <p>₹${item.price}</p>
+      <p>⭐ ${item.rating || "No rating"}</p>
+      <a href="${item.url}" target="_blank">
+        <button>View</button>
+      </a>
+      <button onclick="saveToFavorites('${item.id}', '${item.title}')">❤️</button>
     </div>
-  `).join('');
+  `;
 }
 
-function saveToFavorites(id) {
-  let favs = JSON.parse(localStorage.getItem("favs") || "[]");
-  favs.push(id);
-  localStorage.setItem("favs", JSON.stringify(favs));
+function saveToFavorites(id, title) {
+  let favs = JSON.parse(localStorage.getItem("favorites") || "[]");
+  if (!favs.find(f => f.id === id)) {
+    favs.push({ id, title });
+    localStorage.setItem("favorites", JSON.stringify(favs));
+    alert(`Added "${title}" to favorites.`);
+  } else {
+    alert(`"${title}" is already in favorites.`);
+  }
 }
 
 function toggleDarkMode() {
