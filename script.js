@@ -53,8 +53,7 @@ async function fetchPlatform(platform, query, country) {
         price:    p.product_price || p.price?.raw || 'N/A',
         image:    p.product_photo  || p.thumbnail  || '',
         url:      p.product_url    || p.url        || '#',
-        brand:    brand,
-        discount: p.discount       || p.discountPercentage || ''
+        brand:    brand
       };
     });
   } catch (e) {
