@@ -1,68 +1,53 @@
-// Direct RapidAPI integration for Amazon
-const API_URL = 'https://pricejson-amazon.p.rapidapi.com/pricejson/search';
-const API_KEY = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e';
-const API_HOST = 'pricejson-amazon.p.rapidapi.com';
+const apiKey = 'YOUR_RAPIDAPI_KEY';
+const apiHost = 'pricejson-amazon.p.rapidapi.com';
 
-// Fetch results from Amazon
-async function fetchResults(query) {
-  const url = `${API_URL}?q=${encodeURIComponent(query)}&category=all`;
+async function searchProducts() {
+  const query = document.getElementById('searchInput').value.trim();
+  if (!query) return alert("Enter a product name");
+
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = "<p>Loading...</p>";
+
   try {
-    const res = await fetch(url, {
+    const response = await fetch(`https://${apiHost}/pricejson/search?q=${encodeURIComponent(query)}&category=all`, {
       method: 'GET',
       headers: {
-        'x-rapidapi-key': API_KEY,
-        'x-rapidapi-host': API_HOST
+        'x-rapidapi-key': apiKey,
+        'x-rapidapi-host': apiHost
       }
     });
-    if (!res.ok) throw new Error(`Network response was not ok: ${res.status}`);
-    const data = await res.json();
-    // data format: array of items
-    return data.map(item => ({
-      title: item.title,
-      price: parseFloat(item.price.replace(/[^0-9\.]/g, '')) || 0,
-      image: item.image,
-      link: item.link,
-      source: 'Amazon'
-    }));
-  } catch (err) {
-    console.error(err);
-    return [];
+
+    const data = await response.json();
+    displayResults(data?.data || []);
+  } catch (error) {
+    resultsDiv.innerHTML = "<p>Error loading results.</p>";
+    console.error(error);
   }
 }
 
-// Render results to DOM
-function renderResults(items) {
-  const container = document.getElementById('results');
-  container.innerHTML = '';
-  if (!items.length) {
-    container.innerHTML = '<p class="no-results">No products found.</p>';
+function displayResults(products) {
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = "";
+
+  if (products.length === 0) {
+    resultsDiv.innerHTML = "<p>No products found.</p>";
     return;
   }
-  items.sort((a, b) => a.price - b.price);
-  items.forEach(item => {
-    const div = document.createElement('div');
-    div.classList.add('result-item');
-    div.innerHTML = `
-      <img src="${item.image || ''}" alt="${item.title}">
-      <div class="result-info">
-        <a href="${item.link}" target="_blank">${item.title}</a>
-        <div class="price">₹${item.price.toLocaleString()}</div>
-        <div class="source">Source: ${item.source}</div>
-      </div>
+
+  // Sort by price (cheapest first)
+  products.sort((a, b) => a.price - b.price);
+
+  products.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    card.innerHTML = `
+      <img src="${item.image}" alt="${item.title}" />
+      <h4>${item.title.slice(0, 60)}...</h4>
+      <p><strong>₹${item.price}</strong></p>
+      <a href="${item.url}" target="_blank">View Product</a>
     `;
-    container.appendChild(div);
+
+    resultsDiv.appendChild(card);
   });
 }
-
-// UI Events
-const searchBtn = document.getElementById('search-button');
-const searchInput = document.getElementById('search-input');
-searchBtn.addEventListener('click', async () => {
-  const q = searchInput.value.trim();
-  if (!q) return;
-  const items = await fetchResults(q);
-  renderResults(items);
-});
-searchInput.addEventListener('keypress', e => {
-  if (e.key === 'Enter') searchBtn.click();
-});
