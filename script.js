@@ -160,6 +160,13 @@ function displayResults(arr) {
     : '<p>No results found.</p>';
 }
 
+const backBtn = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > window.innerHeight) backBtn.classList.add('show');
+  else backBtn.classList.remove('show');
+});
+
+
 // Update Prev/Next
 function updatePagination() {
   document.getElementById('prevPage').disabled = currentPage<=1;
