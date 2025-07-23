@@ -2,21 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Universal Price Search</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Global Product Search</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="header">
-    <h1>Universal Price Search</h1>
+  <div class="container">
+    <h1>🌐 Product Search Engine</h1>
+    <input type="text" id="searchInput" placeholder="Search any product..." />
+    <button onclick="searchProducts()">Search</button>
+    <div id="results"></div>
   </div>
-
-  <div class="search-container">
-    <input type="text" id="search-input" placeholder="Enter product name...">
-    <button id="search-button">Search</button>
-  </div>
-
-  <div id="results"></div>
 
   <script src="script.js"></script>
 </body>
