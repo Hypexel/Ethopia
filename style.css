@@ -24,6 +24,28 @@ h1 {
   margin-bottom: 30px;
 }
 
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.filters label {
+  font-size: 14px;
+  margin-right: 5px;
+}
+
+.filters input,
+.filters select {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+
 input, select, button {
   padding: 12px 14px;
   font-size: 16px;
