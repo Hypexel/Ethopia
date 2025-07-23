@@ -14,7 +14,7 @@ function showLoader() { loader.style.display = 'flex'; }
 function hideLoader() { loader.style.display = 'none'; }
 window.addEventListener('load', hideLoader);
 
-// Dark Mode Toggle
+// Dark Mode
 const toggle = document.getElementById('darkModeToggle');
 if (localStorage.darkMode === 'true') document.body.classList.add('dark');
 toggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
@@ -25,14 +25,12 @@ toggle.addEventListener('click', () => {
   localStorage.darkMode = dark;
 });
 
-// Fetch helper (only Amazon & Flipkart)
+// Fetch helper (Amazon & Flipkart)
 async function fetchPlatform(platform, query, country) {
   const { host, key } = API_KEYS[platform];
   const url = `https://${host}/search?query=${encodeURIComponent(query)}&country=${country}`;
   try {
-    const res = await fetch(url, {
-      headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key }
-    });
+    const res = await fetch(url, { headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key } });
     const json = await res.json();
     const items = json.data?.products || [];
     return items.map(p => ({
@@ -40,7 +38,8 @@ async function fetchPlatform(platform, query, country) {
       price: p.product_price || p.price?.raw || 'N/A',
       image: p.product_photo  || p.thumbnail  || '',
       url:   p.product_url    || p.url        || '#',
-      brand: p.product_brand  || p.brand      || ''
+      brand: p.product_brand  || p.brand      || '',
+      discount: p.discount || p.discountPercentage || ''
     }));
   } catch (e) {
     console.error(`Error ${platform}:`, e);
@@ -48,18 +47,17 @@ async function fetchPlatform(platform, query, country) {
   }
 }
 
-// Main search: parallel Amazon+Flipkart
+// Main search
 async function searchProducts() {
   const q       = document.getElementById('searchInput').value.trim();
   const country = document.getElementById('countrySelect').value;
   if (!q) return alert('Enter a product name');
 
   showLoader();
-  document.getElementById('results').innerHTML = `<p>🔄 Searching "${q}"...</p>`;
+  document.getElementById('results').innerHTML = `<p>🔄 Searching "${q}"...<\/p>`;
   allProducts = [];
   currentPage = 1;
 
-  // Only two platforms now
   const [amazon, flipkart] = await Promise.all([
     fetchPlatform('amazon', q, country),
     fetchPlatform('flipkart', q, country)
@@ -72,14 +70,14 @@ async function searchProducts() {
   hideLoader();
 }
 
-// Populate Brand datalist
+// Populate brands
 function populateBrands() {
   const brands = [...new Set(allProducts.map(p => p.brand).filter(b => b))];
-  const dl = document.getElementById('brand-list');
-  dl.innerHTML = brands.map(b => `<option value="${b}">`).join('');
+  document.getElementById('brand-list').innerHTML =
+    brands.map(b => `<option value="${b}">`).join('');
 }
 
-// Filter, sort, paginate, then render
+// Filters + Sort + Paginate + Render
 function applyFiltersAndDisplay() {
   let items = [...allProducts];
   const min   = parseFloat(document.getElementById('minPrice').value) || 0;
@@ -90,14 +88,14 @@ function applyFiltersAndDisplay() {
   // Filter
   items = items.filter(p => {
     const priceNum = parseFloat((p.price || '').replace(/[^\d.]/g,'')) || 0;
-    return priceNum >= min &&
-      priceNum <= max &&
-      (!brand || p.brand.toLowerCase().includes(brand));
+    return priceNum >= min
+        && priceNum <= max
+        && (!brand || p.brand.toLowerCase().includes(brand));
   });
 
   // Sort
-  if (sort === 'low')  items.sort((a,b)=>parseFloat(a.price.replace(/[^\d.]/g,'')) - parseFloat(b.price.replace(/[^\d.]/g,'')));
-  if (sort === 'high') items.sort((a,b)=>parseFloat(b.price.replace(/[^\d.]/g,'')) - parseFloat(a.price.replace(/[^\d.]/g,'')));
+  if (sort === 'low')  items.sort((a,b) => parseFloat(a.price.replace(/[^\d.]/g,'')) - parseFloat(b.price.replace(/[^\d.]/g,'')));
+  if (sort === 'high') items.sort((a,b) => parseFloat(b.price.replace(/[^\d.]/g,'')) - parseFloat(a.price.replace(/[^\d.]/g,'')));
 
   // Paginate
   const start = (currentPage - 1) * RESULTS_PER_PAGE;
@@ -107,7 +105,7 @@ function applyFiltersAndDisplay() {
   updatePagination(items.length);
 }
 
-// Render cards
+// Display product cards with discount badge
 function displayResults(arr) {
   const container = document.getElementById('results');
   container.innerHTML = '';
@@ -119,7 +117,10 @@ function displayResults(arr) {
     const div = document.createElement('div');
     div.className = 'card';
     div.innerHTML = `
-      <img src="${p.image}" alt="${p.title}" />
+      <div class="card-img-wrapper">
+        <img src="${p.image}" alt="${p.title}" />
+        ${p.discount ? `<span class="discount-badge">-${p.discount}</span>` : ''}
+      </div>
       <h4>${p.title}</h4>
       <p><strong>${p.price}</strong></p>
       <p>🏷️ ${p.brand || 'Unknown'}</p>
@@ -129,32 +130,30 @@ function displayResults(arr) {
   });
 }
 
-// Pagination controls
-function updatePagination(total = null) {
+// Pagination controls (infinite style)
+function updatePagination(totalItems = null) {
   const prev = document.getElementById('prevPage');
   const next = document.getElementById('nextPage');
-  const indicator = document.getElementById('pageIndicator');
-
-  const count = total === null
-    ? Math.ceil(allProducts.length / RESULTS_PER_PAGE)
-    : Math.ceil(total / RESULTS_PER_PAGE);
+  // Always allow next if there are more items
+  const maxPage = totalItems
+    ? Math.ceil(totalItems / RESULTS_PER_PAGE)
+    : Infinity;
 
   prev.disabled = currentPage <= 1;
-  next.disabled = currentPage >= count;
-  indicator.textContent = `Page ${currentPage} of ${count}`;
+  next.disabled = currentPage >= maxPage;
+  document.getElementById('pageIndicator').textContent = `Page ${currentPage}`;
 }
 
 function changePage(delta) {
   currentPage += delta;
   applyFiltersAndDisplay();
+  updatePagination();
 }
 
 // Reapply on filter changes
 ['sortSelect','minPrice','maxPrice','brandFilter']
-  .forEach(id => document.getElementById(id)
-    .addEventListener('input', () => {
-      currentPage = 1;
-      applyFiltersAndDisplay();
-      updatePagination();
-    })
-);
+  .forEach(id => document.getElementById(id).addEventListener('input', () => {
+    currentPage = 1;
+    applyFiltersAndDisplay();
+    updatePagination();
+  }));
