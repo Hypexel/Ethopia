@@ -3,14 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Global Product Search</title>
+  <title>Amazon Global Product Search</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h1>🌐 Amazon Product Search</h1>
+    <h1>Search for a product</h1>
+
     <input type="text" id="searchInput" placeholder="Search for a product..." />
+
+    <select id="countrySelect">
+      <option value="US">🇺🇸 United States</option>
+      <option value="IN">🇮🇳 India</option>
+      <option value="GB">🇬🇧 United Kingdom</option>
+      <option value="CA">🇨🇦 Canada</option>
+      <option value="DE">🇩🇪 Germany</option>
+      <option value="FR">🇫🇷 France</option>
+      <option value="IT">🇮🇹 Italy</option>
+      <option value="ES">🇪🇸 Spain</option>
+      <option value="AU">🇦🇺 Australia</option>
+      <option value="BR">🇧🇷 Brazil</option>
+      <option value="MX">🇲🇽 Mexico</option>
+      <option value="JP">🇯🇵 Japan</option>
+    </select>
+
     <button onclick="searchProducts()">Search</button>
+
     <div id="results"></div>
   </div>
 
