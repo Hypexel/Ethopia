@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Universal Price Search</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>🔍 Universal Price Search</h1>
-    <form id="search-form">
-      <input type="text" id="query" placeholder="Enter product name…" required>
-      <button type="submit">Search</button>
-    </form>
-  </header>
-  <main>
-    <div id="spinner" class="hidden">Searching…</div>
-    <div id="results" class="grid"></div>
-  </main>
+  <div class="header">
+    <h1>Universal Price Search</h1>
+  </div>
+
+  <div class="search-container">
+    <input type="text" id="search-input" placeholder="Enter product name...">
+    <button id="search-button">Search</button>
+  </div>
+
+  <div id="results"></div>
+
   <script src="script.js"></script>
 </body>
 </html>
