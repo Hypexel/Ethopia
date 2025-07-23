@@ -2,172 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Smart Product Finder</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #f2f2f2;
-      color: #222;
-      transition: background 0.3s, color 0.3s;
-    }
-    body.dark {
-      background: #121212;
-      color: #f2f2f2;
-    }
-    header {
-      padding: 20px;
-      background: #0088cc;
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .search-container {
-      display: flex;
-      gap: 10px;
-    }
-    input[type="text"] {
-      padding: 10px;
-      border: none;
-      width: 300px;
-      border-radius: 5px;
-    }
-    button {
-      padding: 10px 20px;
-      background: #222;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    .toggle-dark {
-      background: #333;
-    }
-    .products {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      padding: 20px;
-    }
-    .product-card {
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
-    }
-    .product-card:hover {
-      transform: scale(1.02);
-    }
-    .product-card img {
-      width: 100%;
-      height: 200px;
-      object-fit: contain;
-      background: #f8f8f8;
-    }
-    .product-info {
-      padding: 15px;
-    }
-    .product-info h3 {
-      font-size: 16px;
-      margin: 0 0 10px;
-    }
-    .product-info .price {
-      font-weight: bold;
-      color: #28a745;
-    }
-    body.dark .product-card {
-      background: #1f1f1f;
-      color: white;
-    }
-    @media(max-width: 500px) {
-      input[type="text"] {
-        width: 100%;
-      }
-    }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Universal Price Search</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <header>
-    <div class="search-container">
-      <input type="text" id="search" placeholder="Search for products...">
-      <button onclick="searchProducts()">Search</button>
-    </div>
-    <button onclick="toggleDarkMode()" class="toggle-dark">🌙</button>
+    <h1>🔍 Universal Price Search</h1>
+    <form id="search-form">
+      <input type="text" id="query" placeholder="Enter product name…" required>
+      <button type="submit">Search</button>
+    </form>
   </header>
-
-  <div class="products" id="products"></div>
-
-  <script>
-    const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e';
-    const host = 'pricejson-amazon.p.rapidapi.com';
-
-    function toggleDarkMode() {
-      document.body.classList.toggle('dark');
-    }
-
-    async function searchProducts() {
-      const query = document.getElementById('search').value;
-      if (!query) return;
-
-      document.getElementById('products').innerHTML = '<p>Searching...</p>';
-
-      try {
-        const response = await fetch(`https://pricejson-amazon.p.rapidapi.com/pricejson/search?q=${encodeURIComponent(query)}&category=electronics`, {
-          method: 'GET',
-          headers: {
-            'x-rapidapi-host': host,
-            'x-rapidapi-key': apiKey
-          }
-        });
-
-        const data = await response.json();
-        const results = data?.products || [];
-
-        // Sort by price ascending
-        results.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-
-        displayProducts(results);
-      } catch (err) {
-        document.getElementById('products').innerHTML = '<p>Error fetching data.</p>';
-        console.error(err);
-      }
-    }
-
-    function displayProducts(products) {
-      const container = document.getElementById('products');
-      container.innerHTML = '';
-
-      if (products.length === 0) {
-        container.innerHTML = '<p>No products found.</p>';
-        return;
-      }
-
-      products.forEach(product => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.innerHTML = `
-          <img src="${product.image || 'https://via.placeholder.com/250x200'}" alt="${product.name}">
-          <div class="product-info">
-            <h3>${product.name}</h3>
-            <p class="price">${product.price}</p>
-            <a href="${product.url}" target="_blank">
-              <button>View on Amazon</button>
-            </a>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    // Auto search on Enter key
-    document.getElementById('search').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') searchProducts();
-    });
-  </script>
-
+  <main>
+    <div id="spinner" class="hidden">Searching…</div>
+    <div id="results" class="grid"></div>
+  </main>
+  <script src="script.js"></script>
 </body>
 </html>
