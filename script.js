@@ -1,15 +1,17 @@
-const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e'; // your real RapidAPI key
+const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e'; // Replace with your real API key
 const apiHost = 'real-time-amazon-data.p.rapidapi.com';
 
 async function searchProducts() {
   const query = document.getElementById('searchInput').value.trim();
+  const country = document.getElementById('countrySelect').value;
+
   if (!query) return alert("Enter a product name");
 
   const resultsDiv = document.getElementById('results');
   resultsDiv.innerHTML = "<p>Loading...</p>";
 
   try {
-    const url = `https://${apiHost}/search?query=${encodeURIComponent(query)}&country=US`;
+    const url = `https://${apiHost}/search?query=${encodeURIComponent(query)}&country=${country}`;
 
     const response = await fetch(url, {
       method: 'GET',
