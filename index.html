@@ -3,46 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Amazon Product Finder</title>
+  <title>Product Finder</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="main-container">
-    <h1>🛍️ Amazon Product Finder</h1>
-
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Search a product..." />
-      <select id="countrySelect">
-        <option value="US">🇺🇸 US</option>
-        <option value="IN">🇮🇳 IN</option>
-        <option value="GB">🇬🇧 UK</option>
-        <option value="CA">🇨🇦 CA</option>
-      </select>
-      <button onclick="searchProducts()">Search</button>
+  <header>
+    <h1>🌐 Product Finder</h1>
+    <div>
+      <label for="darkToggle">🌙</label>
+      <input type="checkbox" id="darkToggle" />
     </div>
+  </header>
+
+  <section class="controls">
+    <input type="text" id="searchInput" placeholder="🔍 Search for products..." />
+    <select id="countrySelect">
+      <option value="US">🇺🇸 US</option>
+      <option value="IN">🇮🇳 India</option>
+      <option value="GB">🇬🇧 UK</option>
+      <option value="DE">🇩🇪 Germany</option>
+      <option value="JP">🇯🇵 Japan</option>
+    </select>
 
     <div class="filters">
-      <label>Sort:</label>
+      <input type="number" id="minPrice" placeholder="Min Price" />
+      <input type="number" id="maxPrice" placeholder="Max Price" />
+      <input type="text" id="brand" placeholder="Brand" />
       <select id="sortSelect">
-        <option value="relevance">Relevance</option>
-        <option value="low">Price: Low to High</option>
-        <option value="high">Price: High to Low</option>
-      </select>
-
-      <label>Min Price:</label>
-      <input type="number" id="minPrice" placeholder="0" />
-
-      <label>Max Price:</label>
-      <input type="number" id="maxPrice" placeholder="99999" />
-
-      <label>Brand:</label>
-      <select id="brandSelect">
-        <option value="">All</option>
+        <option value="relevance">Sort by Relevance</option>
+        <option value="price_low_high">Price: Low to High</option>
+        <option value="price_high_low">Price: High to Low</option>
       </select>
     </div>
+  </section>
 
-    <div id="results"></div>
-  </div>
+  <section id="suggestions"></section>
+  <section id="results"></section>
 
   <script src="script.js"></script>
 </body>
