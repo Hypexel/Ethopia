@@ -1,7 +1,7 @@
 // === CONFIGURE YOUR RAPIDAPI KEYS HERE ===
 const API_KEYS = {
   amazon:    { host: 'real-time-amazon-data.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
-  flipkart:  { host: 'flipkart-real-time-data.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
+  flipkart:  { host: 'real-time-flipkart-data2.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
   ebay:      { host: 'ebay-data-scraper.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
   walmart:   { host: 'walmart-data.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
   myntra:    { host: 'myntra-product-search.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' }
