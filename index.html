@@ -5,26 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Universal Product Finder</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Font Awesome for icons -->
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <div class="main-container">
-    <header class="header">
-      <h1>🛍️ Universal Product Finder</h1>
-      <button id="darkModeToggle" class="dark-toggle">🌙</button>
-    </header>
+  <!-- Loader Overlay -->
+  <div id="loader" class="loader-overlay">
+    <div class="spinner"></div>
+  </div>
 
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Search a product..." />
-      <select id="countrySelect">
-        <option value="US">🇺🇸 US</option>
-        <option value="IN">🇮🇳 India</option>
-        <option value="GB">🇬🇧 UK</option>
-        <option value="CA">🇨🇦 Canada</option>
-      </select>
-      <button onclick="searchProducts()">Search</button>
+  <header class="site-header">
+    <div class="logo">
+      <i class="fas fa-shopping-basket"></i>
+      <span>ShopSync</span>
     </div>
+    <nav class="nav-links">
+      <a href="#trending">Trending</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <button id="darkModeToggle" class="dark-toggle" title="Toggle Dark / Light">
+      <i class="fas fa-moon"></i>
+    </button>
+  </header>
 
-    <div class="filters">
+  <main>
+    <!-- Hero / Search Section -->
+    <section class="hero">
+      <h1>Find the Best Deals <br/>Across All Shops</h1>
+      <div class="search-bar hero-search">
+        <input type="text" id="searchInput" placeholder="🔍 Search for a product..." />
+        <select id="countrySelect">
+          <option value="US">🇺🇸 US</option>
+          <option value="IN">🇮🇳 India</option>
+          <option value="GB">🇬🇧 UK</option>
+          <option value="CA">🇨🇦 Canada</option>
+        </select>
+        <button onclick="searchProducts()"><i class="fas fa-search"></i> Search</button>
+      </div>
+      <div id="recentSearches" class="recent-searches"></div>
+    </section>
+
+    <!-- Trending Categories -->
+    <section id="trending" class="trending">
+      <h2>🔥 Trending Categories</h2>
+      <div class="trending-list">
+        <button>Smartphones</button>
+        <button>Headphones</button>
+        <button>Laptops</button>
+        <button>Home Decor</button>
+        <button>Fitness</button>
+      </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="filters">
       <label>Sort:
         <select id="sortSelect">
           <option value="relevance">Relevance</option>
@@ -40,10 +77,17 @@
         <input type="text" id="brandFilter" placeholder="Brand" list="brand-list" />
         <datalist id="brand-list"></datalist>
       </label>
-    </div>
+    </section>
 
-    <div id="results"></div>
-  </div>
+    <!-- Results Grid -->
+    <section id="results" class="results-grid"></section>
+  </main>
+
+  <footer id="contact" class="site-footer">
+    <p>&copy; 2025 ShopSync. All rights reserved.</p>
+    <p><a href="mailto:support@shopsync.com">support@shopsync.com</a></p>
+  </footer>
+
   <script src="script.js"></script>
 </body>
 </html>
