@@ -1,104 +1,92 @@
-const RAPIDAPI_KEY = "your_rapidapi_key_here"; // Replace with your key
+const API_KEY = "YOUR_RAPIDAPI_KEY";
+const headersTemplate = {
+  "x-rapidapi-key": API_KEY,
+  "x-rapidapi-host": ""
+};
 
-async function searchProducts() {
-  const query = document.getElementById("search").value.trim();
+const sources = [
+  {
+    name: 'Amazon',
+    host: 'pricejson-amazon.p.rapidapi.com',
+    url: q => `https://pricejson-amazon.p.rapidapi.com/pricejson/search?q=${encodeURIComponent(q)}&category=all`,
+    parser: data => data.products.map(p => ({
+      title: p.title,
+      price: parseFloat(p.price.replace(/[^0-9\.]/g, '')) || Infinity,
+      image: p.image,
+      link: p.link
+    }))
+  },
+  {
+    name: 'Flipkart',
+    host: 'flipkart-store.p.rapidapi.com',
+    url: q => `https://flipkart-store.p.rapidapi.com/search?query=${encodeURIComponent(q)}`,
+    parser: data => data.products.map(p => ({
+      title: p.title,
+      price: parseFloat(p.price.replace(/[^0-9\.]/g, '')) || Infinity,
+      image: p.image,
+      link: p.link
+    }))
+  },
+  {
+    name: 'eBay',
+    host: 'ebay-com.p.rapidapi.com',
+    url: q => `https://ebay-com.p.rapidapi.com/search?query=${encodeURIComponent(q)}`,
+    parser: data => data.searchResult.map(p => ({
+      title: p.title,
+      price: parseFloat(p.price.value) || Infinity,
+      image: p.image.imageUrl,
+      link: p.itemWebUrl
+    }))
+  }
+];
+
+const form = document.getElementById('search-form');
+const resultsDiv = document.getElementById('results');
+const spinner = document.getElementById('spinner');
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const query = document.getElementById('query').value.trim();
   if (!query) return;
-
-  const resultsContainer = document.getElementById("results");
-  resultsContainer.innerHTML = "🔍 Searching...";
+  resultsDiv.innerHTML = '';
+  spinner.classList.remove('hidden');
 
   try {
-    const [amazonData, ebayData] = await Promise.all([
-      fetchAmazon(query),
-      fetchEbay(query),
-    ]);
+    // fetch all sources in parallel
+    const allPromises = sources.map(s => {
+      headersTemplate["x-rapidapi-host"] = s.host;
+      return fetch(s.url(query), { headers: headersTemplate })
+        .then(r => r.json())
+        .then(json => s.parser(json))
+        .catch(() => []);
+    });
+    const resultsArrays = await Promise.all(allPromises);
+    let merged = resultsArrays.flat();
+    // sort by price ascending
+    merged.sort((a, b) => a.price - b.price);
 
-    const merged = mergeAndSort([...amazonData, ...ebayData]);
-
-    if (merged.length === 0) {
-      resultsContainer.innerHTML = "No products found.";
-      return;
+    // render results
+    if (!merged.length) {
+      resultsDiv.innerHTML = `<p>No products found.</p>`;
+    } else {
+      for (let item of merged) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${item.image}" onerror="this.src='https://via.placeholder.com/200x180?text=No+Image'">
+          <div class="card-content">
+            <h2>${item.title}</h2>
+            <div class="price">₹${item.price.toLocaleString()}</div>
+            <div class="source">${item.link.includes('amazon')?'Amazon':item.link.includes('flipkart')?'Flipkart':'eBay'}</div>
+            <a href="${item.link}" target="_blank">View</a>
+          </div>`;
+        resultsDiv.appendChild(card);
+      }
     }
-
-    resultsContainer.innerHTML = merged.map(renderCard).join("");
   } catch (err) {
     console.error(err);
-    resultsContainer.innerHTML = "❌ Error fetching results.";
+    resultsDiv.innerHTML = `<p>Error fetching results. Check console.</p>`;
+  } finally {
+    spinner.classList.add('hidden');
   }
-}
-
-async function fetchAmazon(query) {
-  const res = await fetch(`https://amazon23.p.rapidapi.com/product-search?query=${query}&page=1&country=IN`, {
-    headers: {
-      "X-RapidAPI-Key": RAPIDAPI_KEY,
-      "X-RapidAPI-Host": "amazon23.p.rapidapi.com"
-    }
-  });
-  const json = await res.json();
-  return (json?.result || []).map(item => ({
-    id: item.asin,
-    title: item.title,
-    price: parseFloat(item.price?.raw?.replace(/[^0-9.]/g, '') || 0),
-    rating: item.rating || 0,
-    image: item.thumbnail,
-    url: item.url
-  }));
-}
-
-async function fetchEbay(query) {
-  const res = await fetch(`https://ebay-data-scraper.p.rapidapi.com/search/${query}`, {
-    headers: {
-      "X-RapidAPI-Key": RAPIDAPI_KEY,
-      "X-RapidAPI-Host": "ebay-data-scraper.p.rapidapi.com"
-    }
-  });
-  const json = await res.json();
-  return (json?.data || []).map(item => ({
-    id: item.id,
-    title: item.title,
-    price: parseFloat(item.price?.replace(/[^0-9.]/g, '') || 0),
-    rating: item.rating || 0,
-    image: item.image,
-    url: item.url
-  }));
-}
-
-function mergeAndSort(products) {
-  const unique = new Map();
-  products.forEach(p => {
-    if (p.title && p.price > 0 && !unique.has(p.title)) {
-      unique.set(p.title, p);
-    }
-  });
-  return Array.from(unique.values()).sort((a, b) => a.price - b.price);
-}
-
-function renderCard(item) {
-  return `
-    <div class="card">
-      <img src="${item.image}" alt="${item.title}">
-      <h3>${item.title}</h3>
-      <p>₹${item.price}</p>
-      <p>⭐ ${item.rating || "No rating"}</p>
-      <a href="${item.url}" target="_blank">
-        <button>View</button>
-      </a>
-      <button onclick="saveToFavorites('${item.id}', '${item.title}')">❤️</button>
-    </div>
-  `;
-}
-
-function saveToFavorites(id, title) {
-  let favs = JSON.parse(localStorage.getItem("favorites") || "[]");
-  if (!favs.find(f => f.id === id)) {
-    favs.push({ id, title });
-    localStorage.setItem("favorites", JSON.stringify(favs));
-    alert(`Added "${title}" to favorites.`);
-  } else {
-    alert(`"${title}" is already in favorites.`);
-  }
-}
-
-function toggleDarkMode() {
-  document.body.classList.toggle("dark");
-}
+});
