@@ -26,6 +26,7 @@ toggle.addEventListener('click', () => {
 });
 
 // Fetch helper (Amazon & Flipkart)
+// Fetch helper (Amazon & Flipkart)
 async function fetchPlatform(platform, query, country) {
   const { host, key } = API_KEYS[platform];
   const url = `https://${host}/search?query=${encodeURIComponent(query)}&country=${country}`;
@@ -34,35 +35,26 @@ async function fetchPlatform(platform, query, country) {
     const json = await res.json();
     const items = json.data?.products || [];
 
-    // DEBUG: log the very first item so you can inspect its fields
-    if (items.length && platform === 'flipkart') {
-      console.log('Flipkart product sample:', items[0]);
-    }
-    if (items.length && platform === 'amazon') {
-      console.log('Amazon product sample:', items[0]);
-    }
-
     return items.map(p => {
-      // -- title, image, url, brand as before --
-
-      // Now we’ll attempt to grab a discount field,
-      // but after you inspect the console you can adjust this path:
-      let discount = '';
-      // Example guesses:
+      // pick the brand field depending on platform
+      let brand = '';
       if (platform === 'flipkart') {
-        // Maybe it’s nested differently – you’ll see in console
-        // e.g. p.productBaseInfoV1.discountInfo?.discountPercent
-        discount = p.productBaseInfoV1?.discountInfo?.discountPercentage || '';
-      } else if (platform === 'amazon') {
-        // Amazon sometimes has price.savings.percentage
-        discount = p.price?.savings?.percentage
-          ? `-${p.price.savings.percentage}%`
-          : '';
+        // Flipkart often nests details in productBaseInfoV1
+        brand = p.productBaseInfoV1?.productBrand 
+             || p.productBaseInfoV1?.productTitle 
+             || '';
+      } else {
+        // Amazon & others
+        brand = p.product_brand || p.brand || '';
       }
 
       return {
-        /* ...other fields... */,
-        discount
+        title:    p.product_title || p.title,
+        price:    p.product_price || p.price?.raw || 'N/A',
+        image:    p.product_photo  || p.thumbnail  || '',
+        url:      p.product_url    || p.url        || '#',
+        brand:    brand,
+        discount: p.discount       || p.discountPercentage || ''
       };
     });
   } catch (e) {
@@ -70,8 +62,6 @@ async function fetchPlatform(platform, query, country) {
     return [];
   }
 }
-
-
 
 // Main search
 async function searchProducts() {
