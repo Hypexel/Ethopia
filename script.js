@@ -1,18 +1,20 @@
-const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e'; // Replace with your real API key
+const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e';
 const apiHost = 'real-time-amazon-data.p.rapidapi.com';
 
 async function searchProducts() {
   const query = document.getElementById('searchInput').value.trim();
   const country = document.getElementById('countrySelect').value;
 
-  if (!query) return alert("Enter a product name");
+  if (!query) {
+    alert("Enter a product name");
+    return;
+  }
 
   const resultsDiv = document.getElementById('results');
-  resultsDiv.innerHTML = "<p>Loading...</p>";
+  resultsDiv.innerHTML = `<p>🔄 Searching for "${query}" in ${country}...</p>`;
 
   try {
     const url = `https://${apiHost}/search?query=${encodeURIComponent(query)}&country=${country}`;
-
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -25,9 +27,9 @@ async function searchProducts() {
     const products = data?.data?.products || [];
 
     displayResults(products);
-  } catch (error) {
-    console.error(error);
-    resultsDiv.innerHTML = "<p>Error loading results.</p>";
+  } catch (err) {
+    console.error(err);
+    resultsDiv.innerHTML = `<p>❌ Error fetching results.</p>`;
   }
 }
 
@@ -40,17 +42,15 @@ function displayResults(products) {
     return;
   }
 
-  products.forEach(product => {
-    const card = document.createElement('div');
-    card.className = 'card';
-
+  products.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "card";
     card.innerHTML = `
-      <img src="${product.product_photo}" alt="${product.product_title}" />
-      <h4>${product.product_title}</h4>
-      <p><strong>Price:</strong> ${product.product_price || 'N/A'}</p>
-      <a href="${product.product_url}" target="_blank">View on Amazon</a>
+      <img src="${p.product_photo}" alt="Product image">
+      <h4>${p.product_title}</h4>
+      <p><strong>${p.product_price || 'N/A'}</strong></p>
+      <a href="${p.product_url}" target="_blank">🔗 View on Amazon</a>
     `;
-
     resultsDiv.appendChild(card);
   });
 }
