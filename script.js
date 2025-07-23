@@ -6,7 +6,6 @@ const API_KEYS = {
 
 let allProducts = [];
 let currentPage = 1;
-const RESULTS_PER_PAGE = 20;
 
 // Loader
 const loader = document.getElementById('loader');
@@ -25,214 +24,151 @@ toggle.addEventListener('click', () => {
   localStorage.darkMode = dark;
 });
 
-// Fetch helper (Amazon & Flipkart)
-// Fetch helper (Amazon & Flipkart)
-async function fetchPlatform(platform, query, country) {
+// Fetch one page from a given platform
+async function fetchPlatformPage(platform, query, country, page = 1) {
   const { host, key } = API_KEYS[platform];
-  const url = `https://${host}/search?query=${encodeURIComponent(query)}&country=${country}`;
+  const url = platform === 'flipkart'
+    ? `https://${host}/search?query=${encodeURIComponent(query)}&pincode=400001&page=${page}`
+    : `https://${host}/search?query=${encodeURIComponent(query)}&country=${country}&page=${page}`;
   try {
-    const res  = await fetch(url, { headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key } });
+    const res = await fetch(url, { headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key } });
     const json = await res.json();
     const items = json.data?.products || [];
-
     return items.map(p => {
-      // pick the brand field depending on platform
+      // Brand
       let brand = '';
       if (platform === 'flipkart') {
-        // Flipkart often nests details in productBaseInfoV1
-        brand = p.productBaseInfoV1?.productBrand 
-             || p.productBaseInfoV1?.productTitle 
-             || '';
+        brand = p.productBaseInfoV1?.productBrand || '';
       } else {
-        // Amazon & others
         brand = p.product_brand || p.brand || '';
       }
-
+      // Discount
+      let discount = '';
+      if (platform === 'flipkart') {
+        const info = p.productBaseInfoV1;
+        if (info?.maximumRetailPrice?.amount && info?.flipkartSpecialPrice?.amount) {
+          const mrp = info.maximumRetailPrice.amount,
+                sp  = info.flipkartSpecialPrice.amount;
+          discount = `-${Math.round((mrp - sp)/mrp*100)}%`;
+        }
+      } else {
+        discount = p.price?.savings?.percentage
+          ? `-${p.price.savings.percentage}%`
+          : '';
+      }
       return {
-        title:    p.product_title || p.title,
-        price:    p.product_price || p.price?.raw || 'N/A',
-        image:    p.product_photo  || p.thumbnail  || '',
-        url:      p.product_url    || p.url        || '#',
-        brand:    brand
+        title:    p.product_title    || p.title,
+        price:    p.product_price    || p.price?.raw   || 'N/A',
+        image:    p.product_photo    || p.thumbnail     || '',
+        url:      p.product_url      || p.url           || '#',
+        brand:    brand,
+        discount: discount
       };
     });
   } catch (e) {
-    console.error(`Error ${platform}:`, e);
+    console.error(`Error ${platform} page ${page}:`, e);
     return [];
   }
 }
 
-// Main search
-async function fetchAllAmazon(query, country, maxPages = 10) {
-  const { host, key } = API_KEYS.amazon;
-  let all = [];
-  for (let page = 1; page <= maxPages; page++) {
-    const url = `https://${host}/search?query=${encodeURIComponent(query)}&country=${country}&page=${page}`;
-    const res = await fetch(url, {
-      headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key }
-    });
-    const json = await res.json();
-    const items = json.data?.products || [];
-    if (!items.length) break;
-    all.push(...items.map(p => ({
-      title:    p.product_title  || p.title,
-      price:    p.product_price  || p.price?.raw || 'N/A',
-      image:    p.product_photo  || p.thumbnail  || '',
-      url:      p.product_url    || p.url       || '#',
-      brand:    p.product_brand  || p.brand     || '',
-      discount: (p.price?.savings?.percentage
-                   ? `-${p.price.savings.percentage}%`
-                   : '')
-    })));
-  }
-  return all;
-}
-
-// Fetch ALL pages from Flipkart (up to maxPages or until empty)
-async function fetchAllFlipkart(query, pincode = '400001', maxPages = 10) {
-  const { host, key } = API_KEYS.flipkart;
-  let all = [];
-  for (let page = 1; page <= maxPages; page++) {
-    const url = `https://${host}/search?query=${encodeURIComponent(query)}&pincode=${pincode}&page=${page}`;
-    const res = await fetch(url, {
-      headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key }
-    });
-    const json = await res.json();
-    const items = json.data?.products || [];
-    if (!items.length) break;
-    all.push(...items.map(p => ({
-      title:    p.productBaseInfoV1?.title            || p.title,
-      price:    p.productBaseInfoV1?.flipkartSpecialPrice?.amount?.toString() 
-                  || p.productBaseInfoV1?.maximumRetailPrice?.amount?.toString()
-                  || 'N/A',
-      image:    p.productBaseInfoV1?.imageUrls?.['200x200'] || p.thumbnail || '',
-      url:      p.productBaseInfoV1?.productUrl       || p.url || '#',
-      brand:    p.productBaseInfoV1?.productBrand     || '',
-      discount: (() => {
-        const info = p.productBaseInfoV1;
-        if (info?.maximumRetailPrice?.amount && info?.flipkartSpecialPrice?.amount) {
-          const mrp = info.maximumRetailPrice.amount;
-          const sp  = info.flipkartSpecialPrice.amount;
-          return `-${Math.round((mrp - sp) / mrp * 100)}%`;
-        }
-        return '';
-      })()
-    })));
-  }
-  return all;
-}
-
-
-// 2) Updated main search
-async function searchProducts() {
+// Load and merge one page from both platforms
+async function loadPage(page) {
   const q       = document.getElementById('searchInput').value.trim();
   const country = document.getElementById('countrySelect').value;
   if (!q) return alert('Enter a product name');
 
   showLoader();
-  currentPage = 1;
-  document.getElementById('results').innerHTML = `<p>🔄 Searching "${q}"…</p>`;
+  document.getElementById('results').innerHTML = `<p>🔄 Loading page ${page}…</p>`;
 
-  // Fetch ALL pages from Amazon and Flipkart
-  const [amazonResults, flipkartResults] = await Promise.all([
-    fetchAllAmazon(q, country, 20),         // up to 20 Amazon pages
-    fetchAllFlipkart(q, /*pincode=*/'400001', 20)  // up to 20 Flipkart pages
+  const [amz, flp] = await Promise.all([
+    fetchPlatformPage('amazon',   q, country, page),
+    fetchPlatformPage('flipkart', q, country, page)
   ]);
 
-  allProducts = [...amazonResults, ...flipkartResults];
+  // Interleave results
+  const merged = [];
+  const maxLen = Math.max(amz.length, flp.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (amz[i]) merged.push(amz[i]);
+    if (flp[i]) merged.push(flp[i]);
+  }
 
+  allProducts = merged;
   populateBrands();
   applyFiltersAndDisplay();
-  updatePagination(allProducts.length);
+  updatePagination();
   hideLoader();
 }
 
-
-
-// Populate brands
-function populateBrands() {
-  const brands = [...new Set(allProducts.map(p => p.brand).filter(b => b))];
-  document.getElementById('brand-list').innerHTML =
-    brands.map(b => `<option value="${b}">`).join('');
+// Initial search
+function searchProducts() {
+  currentPage = 1;
+  loadPage(1);
 }
 
-// Filters + Sort + Paginate + Render
+// Change page
+function changePage(delta) {
+  currentPage = Math.max(1, currentPage + delta);
+  loadPage(currentPage);
+}
+
+// Populate brand datalist
+function populateBrands() {
+  const brands = [...new Set(allProducts.map(p => p.brand).filter(b=>b))];
+  document.getElementById('brand-list').innerHTML =
+    brands.map(b=>`<option value="${b}">`).join('');
+}
+
+// Filter, sort, render
 function applyFiltersAndDisplay() {
   let items = [...allProducts];
-  const min   = parseFloat(document.getElementById('minPrice').value) || 0;
-  const max   = parseFloat(document.getElementById('maxPrice').value) || Infinity;
+  const min   = parseFloat(document.getElementById('minPrice').value)||0;
+  const max   = parseFloat(document.getElementById('maxPrice').value)||Infinity;
   const sort  = document.getElementById('sortSelect').value;
   const brand = document.getElementById('brandFilter').value.toLowerCase();
 
-  // Filter
-  items = items.filter(p => {
-    const priceNum = parseFloat((p.price || '').replace(/[^\d.]/g,'')) || 0;
-    return priceNum >= min
-        && priceNum <= max
-        && (!brand || p.brand.toLowerCase().includes(brand));
+  items = items.filter(p=>{
+    const priceNum = parseFloat((p.price||'').replace(/[^\d.]/g,''))||0;
+    return priceNum>=min && priceNum<=max &&
+      (!brand||p.brand.toLowerCase().includes(brand));
   });
 
-  // Sort
-  if (sort === 'low')  items.sort((a,b) => parseFloat(a.price.replace(/[^\d.]/g,'')) - parseFloat(b.price.replace(/[^\d.]/g,'')));
-  if (sort === 'high') items.sort((a,b) => parseFloat(b.price.replace(/[^\d.]/g,'')) - parseFloat(a.price.replace(/[^\d.]/g,'')));
+  if(sort==='low')
+    items.sort((a,b)=>parseFloat(a.price.replace(/[^\d.]/g,''))-parseFloat(b.price.replace(/[^\d.]/g,'')));
+  if(sort==='high')
+    items.sort((a,b)=>parseFloat(b.price.replace(/[^\d.]/g,''))-parseFloat(a.price.replace(/[^\d.]/g,'')));
 
-  // Paginate
-  const start = (currentPage - 1) * RESULTS_PER_PAGE;
-  const pageItems = items.slice(start, start + RESULTS_PER_PAGE);
-
-  displayResults(pageItems);
-  updatePagination(items.length);
+  displayResults(items);
 }
 
-// Display product cards with discount badge
+// Render cards
 function displayResults(arr) {
   const container = document.getElementById('results');
-  container.innerHTML = '';
-  if (!arr.length) {
-    container.innerHTML = '<p>No results found.</p>';
-    return;
-  }
-  arr.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'card';
-    div.innerHTML = `
-      <div class="card-img-wrapper">
-        <img src="${p.image}" alt="${p.title}" />
-        ${p.discount ? `<span class="discount-badge">-${p.discount}</span>` : ''}
+  container.innerHTML = arr.length
+    ? arr.map(p=>`
+      <div class="card">
+        <div class="card-img-wrapper">
+          <img src="${p.image}" alt="${p.title}" />
+          ${p.discount?`<span class="discount-badge">${p.discount}</span>`:''}
+        </div>
+        <h4>${p.title}</h4>
+        <div class="brand-label">${p.brand}</div>
+        <p class="price">${p.price}</p>
+        <a href="${p.url}" target="_blank">View</a>
       </div>
-      <h4>${p.title}</h4>
-      <p><strong>${p.price}</strong></p>
-      <p>🏷️ ${p.brand || 'Unknown'}</p>
-      <a href="${p.url}" target="_blank">View</a>
-    `;
-    container.appendChild(div);
-  });
+    `).join('')
+    : '<p>No results found.</p>';
 }
 
-// Pagination controls (infinite style)
-function updatePagination(totalItems = null) {
-  const prev = document.getElementById('prevPage');
-  const next = document.getElementById('nextPage');
-  // Always allow next if there are more items
-  const maxPage = totalItems
-    ? Math.ceil(totalItems / RESULTS_PER_PAGE)
-    : Infinity;
-
-  prev.disabled = currentPage <= 1;
-  next.disabled = currentPage >= maxPage;
+// Update Prev/Next
+function updatePagination() {
+  document.getElementById('prevPage').disabled = currentPage<=1;
   document.getElementById('pageIndicator').textContent = `Page ${currentPage}`;
 }
 
-function changePage(delta) {
-  currentPage += delta;
-  applyFiltersAndDisplay();
-  updatePagination();
-}
-
-// Reapply on filter changes
+// Re-run filters on input change
 ['sortSelect','minPrice','maxPrice','brandFilter']
-  .forEach(id => document.getElementById(id).addEventListener('input', () => {
-    currentPage = 1;
-    applyFiltersAndDisplay();
-    updatePagination();
-  }));
+  .forEach(id=>
+    document.getElementById(id)
+      .addEventListener('input',applyFiltersAndDisplay)
+  );
