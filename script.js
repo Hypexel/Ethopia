@@ -6,6 +6,7 @@ const API_KEYS = {
 
 let allProducts = [];
 let currentPage = 1;
+
 // Loader
 const loader = document.getElementById('loader');
 function showLoader() { loader.style.display = 'flex'; }
@@ -164,11 +165,6 @@ function updatePagination() {
   document.getElementById('prevPage').disabled = currentPage<=1;
   document.getElementById('pageIndicator').textContent = `Page ${currentPage}`;
 }
-
-const backBtn = document.getElementById('backToTop');
-window.addEventListener('scroll', () => {
-  backBtn.classList.toggle('show', window.scrollY > window.innerHeight);
-});
 
 // Re-run filters on input change
 ['sortSelect','minPrice','maxPrice','brandFilter']
