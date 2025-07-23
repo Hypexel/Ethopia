@@ -6,7 +6,7 @@ const API_KEYS = {
 
 let allProducts = [];
 let currentPage = 1;
-const RESULTS_PER_PAGE = 12;
+const RESULTS_PER_PAGE = 20;
 
 // Loader
 const loader = document.getElementById('loader');
