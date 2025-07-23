@@ -1,18 +1,23 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>Price Aggregator</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Product Price Aggregator</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app">
+  <div class="container">
     <header>
-      <h1>🛒 Price Aggregator</h1>
-      <input type="text" id="search" placeholder="Search for a product...">
-      <button onclick="search()">Search</button>
-      <button onclick="toggleDarkMode()">🌙</button>
+      <h1>🛍️ Price Aggregator</h1>
+      <div class="controls">
+        <input type="text" id="search" placeholder="Search products..." />
+        <button onclick="searchProducts()">Search</button>
+        <button onclick="toggleDarkMode()">🌙</button>
+      </div>
     </header>
 
-    <section id="results"></section>
+    <section id="results" class="results-grid"></section>
   </div>
 
   <script src="script.js"></script>
