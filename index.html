@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Amazon Product Finder</title>
+  <title>Universal Product Finder</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="main-container">
     <header class="header">
-      <h1>🛍️ Amazon Product Finder</h1>
+      <h1>🛍️ Universal Product Finder</h1>
       <button id="darkModeToggle" class="dark-toggle">🌙</button>
     </header>
 
@@ -17,9 +17,9 @@
       <input type="text" id="searchInput" placeholder="Search a product..." />
       <select id="countrySelect">
         <option value="US">🇺🇸 US</option>
-        <option value="IN">🇮🇳 IN</option>
+        <option value="IN">🇮🇳 India</option>
         <option value="GB">🇬🇧 UK</option>
-        <option value="CA">🇨🇦 CA</option>
+        <option value="CA">🇨🇦 Canada</option>
       </select>
       <button onclick="searchProducts()">Search</button>
     </div>
@@ -28,26 +28,22 @@
       <label>Sort:
         <select id="sortSelect">
           <option value="relevance">Relevance</option>
-          <option value="low">Price: Low to High</option>
-          <option value="high">Price: High to Low</option>
+          <option value="low">Low → High</option>
+          <option value="high">High → Low</option>
         </select>
       </label>
-      <label>Min Price:
-        <input type="number" id="minPrice" placeholder="0" />
-      </label>
-      <label>Max Price:
-        <input type="number" id="maxPrice" placeholder="99999" />
+      <label>Price:
+        <input type="number" id="minPrice" placeholder="Min" />
+        <input type="number" id="maxPrice" placeholder="Max" />
       </label>
       <label>Brand:
-        <select id="brandSelect">
-          <option value="">All</option>
-        </select>
+        <input type="text" id="brandFilter" placeholder="Brand" list="brand-list" />
+        <datalist id="brand-list"></datalist>
       </label>
     </div>
 
     <div id="results"></div>
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>
