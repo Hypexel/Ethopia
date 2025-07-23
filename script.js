@@ -1,92 +1,68 @@
-const API_KEY = "YOUR_RAPIDAPI_KEY";
-const headersTemplate = {
-  "x-rapidapi-key": API_KEY,
-  "x-rapidapi-host": ""
-};
+// Direct RapidAPI integration for Amazon
+const API_URL = 'https://pricejson-amazon.p.rapidapi.com/pricejson/search';
+const API_KEY = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e';
+const API_HOST = 'pricejson-amazon.p.rapidapi.com';
 
-const sources = [
-  {
-    name: 'Amazon',
-    host: 'pricejson-amazon.p.rapidapi.com',
-    url: q => `https://pricejson-amazon.p.rapidapi.com/pricejson/search?q=${encodeURIComponent(q)}&category=all`,
-    parser: data => data.products.map(p => ({
-      title: p.title,
-      price: parseFloat(p.price.replace(/[^0-9\.]/g, '')) || Infinity,
-      image: p.image,
-      link: p.link
-    }))
-  },
-  {
-    name: 'Flipkart',
-    host: 'flipkart-store.p.rapidapi.com',
-    url: q => `https://flipkart-store.p.rapidapi.com/search?query=${encodeURIComponent(q)}`,
-    parser: data => data.products.map(p => ({
-      title: p.title,
-      price: parseFloat(p.price.replace(/[^0-9\.]/g, '')) || Infinity,
-      image: p.image,
-      link: p.link
-    }))
-  },
-  {
-    name: 'eBay',
-    host: 'ebay-com.p.rapidapi.com',
-    url: q => `https://ebay-com.p.rapidapi.com/search?query=${encodeURIComponent(q)}`,
-    parser: data => data.searchResult.map(p => ({
-      title: p.title,
-      price: parseFloat(p.price.value) || Infinity,
-      image: p.image.imageUrl,
-      link: p.itemWebUrl
-    }))
-  }
-];
-
-const form = document.getElementById('search-form');
-const resultsDiv = document.getElementById('results');
-const spinner = document.getElementById('spinner');
-
-form.addEventListener('submit', async e => {
-  e.preventDefault();
-  const query = document.getElementById('query').value.trim();
-  if (!query) return;
-  resultsDiv.innerHTML = '';
-  spinner.classList.remove('hidden');
-
+// Fetch results from Amazon
+async function fetchResults(query) {
+  const url = `${API_URL}?q=${encodeURIComponent(query)}&category=all`;
   try {
-    // fetch all sources in parallel
-    const allPromises = sources.map(s => {
-      headersTemplate["x-rapidapi-host"] = s.host;
-      return fetch(s.url(query), { headers: headersTemplate })
-        .then(r => r.json())
-        .then(json => s.parser(json))
-        .catch(() => []);
-    });
-    const resultsArrays = await Promise.all(allPromises);
-    let merged = resultsArrays.flat();
-    // sort by price ascending
-    merged.sort((a, b) => a.price - b.price);
-
-    // render results
-    if (!merged.length) {
-      resultsDiv.innerHTML = `<p>No products found.</p>`;
-    } else {
-      for (let item of merged) {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <img src="${item.image}" onerror="this.src='https://via.placeholder.com/200x180?text=No+Image'">
-          <div class="card-content">
-            <h2>${item.title}</h2>
-            <div class="price">₹${item.price.toLocaleString()}</div>
-            <div class="source">${item.link.includes('amazon')?'Amazon':item.link.includes('flipkart')?'Flipkart':'eBay'}</div>
-            <a href="${item.link}" target="_blank">View</a>
-          </div>`;
-        resultsDiv.appendChild(card);
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': API_KEY,
+        'x-rapidapi-host': API_HOST
       }
-    }
+    });
+    if (!res.ok) throw new Error(`Network response was not ok: ${res.status}`);
+    const data = await res.json();
+    // data format: array of items
+    return data.map(item => ({
+      title: item.title,
+      price: parseFloat(item.price.replace(/[^0-9\.]/g, '')) || 0,
+      image: item.image,
+      link: item.link,
+      source: 'Amazon'
+    }));
   } catch (err) {
     console.error(err);
-    resultsDiv.innerHTML = `<p>Error fetching results. Check console.</p>`;
-  } finally {
-    spinner.classList.add('hidden');
+    return [];
   }
+}
+
+// Render results to DOM
+function renderResults(items) {
+  const container = document.getElementById('results');
+  container.innerHTML = '';
+  if (!items.length) {
+    container.innerHTML = '<p class="no-results">No products found.</p>';
+    return;
+  }
+  items.sort((a, b) => a.price - b.price);
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.classList.add('result-item');
+    div.innerHTML = `
+      <img src="${item.image || ''}" alt="${item.title}">
+      <div class="result-info">
+        <a href="${item.link}" target="_blank">${item.title}</a>
+        <div class="price">₹${item.price.toLocaleString()}</div>
+        <div class="source">Source: ${item.source}</div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// UI Events
+const searchBtn = document.getElementById('search-button');
+const searchInput = document.getElementById('search-input');
+searchBtn.addEventListener('click', async () => {
+  const q = searchInput.value.trim();
+  if (!q) return;
+  const items = await fetchResults(q);
+  renderResults(items);
+});
+searchInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter') searchBtn.click();
 });
