@@ -6,7 +6,6 @@ const API_KEYS = {
 
 let allProducts = [];
 let currentPage = 1;
-
 // Loader
 const loader = document.getElementById('loader');
 function showLoader() { loader.style.display = 'flex'; }
@@ -22,6 +21,11 @@ toggle.addEventListener('click', () => {
   const dark = document.body.classList.contains('dark');
   toggle.textContent = dark ? '☀️' : '🌙';
   localStorage.darkMode = dark;
+
+//back to top
+const backBtn = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+  backBtn.classList.toggle('show', window.scrollY > window.innerHeight);
 });
 
 // Fetch one page from a given platform
@@ -159,13 +163,6 @@ function displayResults(arr) {
     `).join('')
     : '<p>No results found.</p>';
 }
-
-const backBtn = document.getElementById('backToTop');
-window.addEventListener('scroll', () => {
-  if (window.scrollY > window.innerHeight) backBtn.classList.add('show');
-  else backBtn.classList.remove('show');
-});
-
 
 // Update Prev/Next
 function updatePagination() {
