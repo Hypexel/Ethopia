@@ -17,9 +17,28 @@
         <option value="IN">🇮🇳 IN</option>
         <option value="GB">🇬🇧 UK</option>
         <option value="CA">🇨🇦 CA</option>
-        <option value="DE">🇩🇪 DE</option>
       </select>
       <button onclick="searchProducts()">Search</button>
+    </div>
+
+    <div class="filters">
+      <label>Sort:</label>
+      <select id="sortSelect">
+        <option value="relevance">Relevance</option>
+        <option value="low">Price: Low to High</option>
+        <option value="high">Price: High to Low</option>
+      </select>
+
+      <label>Min Price:</label>
+      <input type="number" id="minPrice" placeholder="0" />
+
+      <label>Max Price:</label>
+      <input type="number" id="maxPrice" placeholder="99999" />
+
+      <label>Brand:</label>
+      <select id="brandSelect">
+        <option value="">All</option>
+      </select>
     </div>
 
     <div id="results"></div>
