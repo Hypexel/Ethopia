@@ -1,106 +1,113 @@
-const API_KEY = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e';
-const API_HOST = 'real-time-amazon-data.p.rapidapi.com';
+const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e';
+const apiHost = 'real-time-amazon-data.p.rapidapi.com';
+let originalProducts = [];
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadTheme();
-  loadLanguage();
-  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-  document.getElementById('language-selector').addEventListener('change', changeLanguage);
-  document.getElementById('search-bar').addEventListener('input', showSuggestions);
-});
+async function searchProducts() {
+  const query = document.getElementById('searchInput').value.trim();
+  const country = document.getElementById('countrySelect').value;
+  const resultsDiv = document.getElementById('results');
+  const brandSelect = document.getElementById('brandSelect');
 
-function toggleTheme() {
-  document.body.classList.toggle('dark');
-  localStorage.setItem('dark-mode', document.body.classList.contains('dark'));
-}
+  if (!query) {
+    alert("Enter a product name");
+    return;
+  }
 
-function loadTheme() {
-  if (localStorage.getItem('dark-mode') === 'true') {
-    document.body.classList.add('dark');
+  resultsDiv.innerHTML = `<p>🔄 Searching for "${query}" in ${country}...</p>`;
+  brandSelect.innerHTML = `<option value="">All</option>`;
+
+  try {
+    const url = `https://${apiHost}/search?query=${encodeURIComponent(query)}&country=${country}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': apiKey,
+        'x-rapidapi-host': apiHost
+      }
+    });
+
+    const data = await response.json();
+    originalProducts = data?.data?.products || [];
+
+    populateBrands(originalProducts);
+    applyFiltersAndDisplay();
+  } catch (err) {
+    console.error(err);
+    resultsDiv.innerHTML = `<p>❌ Error fetching results.</p>`;
   }
 }
 
-function changeLanguage() {
-  const lang = document.getElementById('language-selector').value;
-  fetch(`lang/${lang}.json`)
-    .then(res => res.json())
-    .then(data => {
-      document.querySelectorAll('[data-translate]').forEach(el => {
-        const key = el.getAttribute('data-translate');
-        if (data[key]) el.textContent = data[key];
-      });
-    });
-}
+function populateBrands(products) {
+  const brandSet = new Set();
+  products.forEach(p => {
+    if (p.product_brand) brandSet.add(p.product_brand);
+  });
 
-function showSuggestions() {
-  const query = document.getElementById('search-bar').value;
-  if (query.length < 3) return;
-
-  // Dummy local suggestions for now (real suggestion API can be added)
-  const suggestions = ['Laptop', 'iPhone', 'Keyboard', 'Headphones'].filter(item =>
-    item.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const suggestionsBox = document.getElementById('suggestions');
-  suggestionsBox.innerHTML = '';
-  suggestions.forEach(s => {
-    const div = document.createElement('div');
-    div.textContent = s;
-    div.onclick = () => {
-      document.getElementById('search-bar').value = s;
-      suggestionsBox.innerHTML = '';
-    };
-    suggestionsBox.appendChild(div);
+  const brandSelect = document.getElementById('brandSelect');
+  brandSet.forEach(brand => {
+    const option = document.createElement('option');
+    option.value = brand;
+    option.textContent = brand;
+    brandSelect.appendChild(option);
   });
 }
 
-async function searchProducts() {
-  const query = document.getElementById('search-bar').value;
-  const country = document.getElementById('country-selector').value;
-  const brand = document.getElementById('brand-filter').value.toLowerCase();
-  const minPrice = parseFloat(document.getElementById('min-price').value) || 0;
-  const maxPrice = parseFloat(document.getElementById('max-price').value) || Infinity;
-  const sort = document.getElementById('sort-by').value;
+function applyFiltersAndDisplay() {
+  let products = [...originalProducts];
+  const min = parseFloat(document.getElementById('minPrice').value) || 0;
+  const max = parseFloat(document.getElementById('maxPrice').value) || Infinity;
+  const sort = document.getElementById('sortSelect').value;
+  const brand = document.getElementById('brandSelect').value;
 
-  const url = `https://${API_HOST}/search?query=${encodeURIComponent(query)}&country=${country}`;
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'x-rapidapi-host': API_HOST,
-      'x-rapidapi-key': API_KEY
-    }
-  });
-
-  const data = await res.json();
-  let products = data.data || [];
-
-  // Filter
+  // Filter by price
   products = products.filter(p => {
-    const price = parseFloat(p.price?.raw?.replace(/[^\d.]/g, '')) || 0;
-    return (!brand || p.title.toLowerCase().includes(brand)) &&
-           price >= minPrice &&
-           price <= maxPrice;
+    const price = parseFloat((p.product_price || '').replace(/[^\d.]/g, ''));
+    return !isNaN(price) && price >= min && price <= max;
   });
+
+  // Filter by brand
+  if (brand) {
+    products = products.filter(p => p.product_brand === brand);
+  }
 
   // Sort
-  if (sort === 'price-asc') products.sort((a, b) => parseFloat(a.price.raw.replace(/[^\d.]/g, '')) - parseFloat(b.price.raw.replace(/[^\d.]/g, '')));
-  if (sort === 'price-desc') products.sort((a, b) => parseFloat(b.price.raw.replace(/[^\d.]/g, '')) - parseFloat(a.price.raw.replace(/[^\d.]/g, '')));
+  products.sort((a, b) => {
+    const priceA = parseFloat((a.product_price || '').replace(/[^\d.]/g, ''));
+    const priceB = parseFloat((b.product_price || '').replace(/[^\d.]/g, ''));
 
-  displayProducts(products);
+    if (sort === "low") return priceA - priceB;
+    if (sort === "high") return priceB - priceA;
+    return 0;
+  });
+
+  displayResults(products);
 }
 
-function displayProducts(products) {
-  const results = document.getElementById('results');
-  results.innerHTML = '';
-  products.forEach(product => {
-    const div = document.createElement('div');
-    div.className = 'product';
-    div.innerHTML = `
-      <img src="${product.thumbnail}" width="100%">
-      <h4>${product.title}</h4>
-      <p>${product.price?.raw || 'N/A'}</p>
-      <a href="${product.url}" target="_blank">View</a>
+function displayResults(products) {
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = "";
+
+  if (products.length === 0) {
+    resultsDiv.innerHTML = "<p>No products found for selected filters.</p>";
+    return;
+  }
+
+  products.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${p.product_photo}" alt="Product image">
+      <h4>${p.product_title}</h4>
+      <p><strong>${p.product_price || 'N/A'}</strong></p>
+      <p>🧵 ${p.product_brand || 'Unknown'}</p>
+      <a href="${p.product_url}" target="_blank">🔗 View on Amazon</a>
     `;
-    results.appendChild(div);
+    resultsDiv.appendChild(card);
   });
 }
+
+// Re-filter when filter inputs change
+document.getElementById("sortSelect").addEventListener("change", applyFiltersAndDisplay);
+document.getElementById("minPrice").addEventListener("input", applyFiltersAndDisplay);
+document.getElementById("maxPrice").addEventListener("input", applyFiltersAndDisplay);
+document.getElementById("brandSelect").addEventListener("change", applyFiltersAndDisplay);
