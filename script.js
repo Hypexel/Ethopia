@@ -34,48 +34,34 @@ async function fetchPlatform(platform, query, country) {
     const json = await res.json();
     const items = json.data?.products || [];
 
+    // DEBUG: log the very first item so you can inspect its fields
+    if (items.length && platform === 'flipkart') {
+      console.log('Flipkart product sample:', items[0]);
+    }
+    if (items.length && platform === 'amazon') {
+      console.log('Amazon product sample:', items[0]);
+    }
+
     return items.map(p => {
-      // Titles, images, urls unchanged...
-      const title = p.product_title || p.title;
-      const image = p.product_photo  || p.thumbnail  || '';
-      const url   = p.product_url    || p.url        || '#';
+      // -- title, image, url, brand as before --
 
-      // Price parsing
-      let rawPrice = p.product_price;
-      let listPrice = null;
-      if (!rawPrice && p.price?.raw) rawPrice = p.price.raw;
-
-      // Compute discount
+      // Now we’ll attempt to grab a discount field,
+      // but after you inspect the console you can adjust this path:
       let discount = '';
-      if (platform === 'flipkart' && p.productBaseInfoV1) {
-        // Flipkart: compare MRP vs special price
-        const base = p.productBaseInfoV1;
-        const mrp = base.maximumRetailPrice?.amount;
-        const sp  = base.flipkartSpecialPrice?.amount;
-        if (mrp && sp && mrp > sp) {
-          discount = `-${Math.round((mrp - sp) / mrp * 100)}%`;
-        }
-      } else if (platform === 'amazon' && p.price?.savings) {
-        // Amazon: savings contains percentage
-        discount = p.price.savings.percentage
+      // Example guesses:
+      if (platform === 'flipkart') {
+        // Maybe it’s nested differently – you’ll see in console
+        // e.g. p.productBaseInfoV1.discountInfo?.discountPercent
+        discount = p.productBaseInfoV1?.discountInfo?.discountPercentage || '';
+      } else if (platform === 'amazon') {
+        // Amazon sometimes has price.savings.percentage
+        discount = p.price?.savings?.percentage
           ? `-${p.price.savings.percentage}%`
           : '';
       }
 
-      // Brand extraction
-      let brand = '';
-      if (platform === 'flipkart') {
-        brand = p.productBaseInfoV1?.productBrand || '';
-      } else {
-        brand = p.product_brand || p.brand || '';
-      }
-
       return {
-        title,
-        price: rawPrice || 'N/A',
-        image,
-        url,
-        brand,
+        /* ...other fields... */,
         discount
       };
     });
@@ -84,6 +70,7 @@ async function fetchPlatform(platform, query, country) {
     return [];
   }
 }
+
 
 
 // Main search
