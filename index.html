@@ -5,33 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Universal Product Finder</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <!-- Font Awesome for icons -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <!-- Alert Banner -->
   <div class="alert-banner">
     ⚠️ Currently only <strong>Amazon</strong> & <strong>Flipkart</strong> products are listed.
   </div>
 
-  <!-- Loader Overlay -->
   <div id="loader" class="loader-overlay">
     <div class="spinner"></div>
   </div>
 
   <header class="site-header">
-    <div class="logo">
-      <i class="fas fa-shopping-basket"></i> ShopSync
-    </div>
-    <button id="darkModeToggle" class="dark-toggle" title="Toggle Dark / Light">
-      <i class="fas fa-moon"></i>
-    </button>
+    <div class="logo"><i class="fas fa-shopping-basket"></i> ShopSync</div>
+    <button id="darkModeToggle" class="dark-toggle" title="Toggle Dark / Light">🌙</button>
   </header>
 
   <main>
-    <!-- Hero / Search Section -->
     <section class="hero">
       <h1>Find the Best Deals</h1>
       <div class="search-bar hero-search">
@@ -46,7 +37,6 @@
       </div>
     </section>
 
-    <!-- Filters -->
     <section class="filters">
       <label>Sort:
         <select id="sortSelect">
@@ -65,14 +55,12 @@
       </label>
     </section>
 
-    <!-- Results Grid -->
     <section id="results" class="results-grid"></section>
 
-    <!-- Pagination -->
     <section class="pagination">
       <button id="prevPage" onclick="changePage(-1)" disabled>« Prev</button>
       <span id="pageIndicator">Page 1</span>
-      <button id="nextPage" onclick="changePage(1)" disabled>Next »</button>
+      <button id="nextPage" onclick="changePage(1)">Next »</button>
     </section>
   </main>
 
