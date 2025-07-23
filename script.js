@@ -1,15 +1,17 @@
-const apiKey = 'YOUR_RAPIDAPI_KEY';
-const apiHost = 'pricejson-amazon.p.rapidapi.com';
+const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e';
+const apiHost = 'real-time-amazon-data.p.rapidapi.com';
 
-async function searchProducts() {
-  const query = document.getElementById('searchInput').value.trim();
-  if (!query) return alert("Enter a product name");
+async function fetchInfluencerProducts() {
+  const influencerName = document.getElementById('influencerInput').value.trim();
+  if (!influencerName) return alert("Please enter an influencer name.");
 
   const resultsDiv = document.getElementById('results');
   resultsDiv.innerHTML = "<p>Loading...</p>";
 
   try {
-    const response = await fetch(`https://${apiHost}/pricejson/search?q=${encodeURIComponent(query)}&category=all`, {
+    const url = `https://${apiHost}/influencer-profile?influencer_name=${influencerName}&country=US`;
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'x-rapidapi-key': apiKey,
@@ -18,14 +20,16 @@ async function searchProducts() {
     });
 
     const data = await response.json();
-    displayResults(data?.data || []);
+    const products = data?.data?.products || [];
+
+    displayProducts(products);
   } catch (error) {
-    resultsDiv.innerHTML = "<p>Error loading results.</p>";
     console.error(error);
+    resultsDiv.innerHTML = "<p>Error fetching products. Check console.</p>";
   }
 }
 
-function displayResults(products) {
+function displayProducts(products) {
   const resultsDiv = document.getElementById('results');
   resultsDiv.innerHTML = "";
 
@@ -34,18 +38,15 @@ function displayResults(products) {
     return;
   }
 
-  // Sort by price (cheapest first)
-  products.sort((a, b) => a.price - b.price);
-
-  products.forEach(item => {
+  products.forEach(product => {
     const card = document.createElement('div');
     card.className = 'card';
 
     card.innerHTML = `
-      <img src="${item.image}" alt="${item.title}" />
-      <h4>${item.title.slice(0, 60)}...</h4>
-      <p><strong>₹${item.price}</strong></p>
-      <a href="${item.url}" target="_blank">View Product</a>
+      <img src="${product.product_photo}" alt="${product.product_title}" />
+      <h4>${product.product_title}</h4>
+      <p><strong>Price:</strong> ${product.product_price || 'N/A'}</p>
+      <a href="${product.product_url}" target="_blank">View on Amazon</a>
     `;
 
     resultsDiv.appendChild(card);
