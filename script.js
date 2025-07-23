@@ -1,13 +1,21 @@
 // === CONFIGURE YOUR RAPIDAPI KEYS HERE ===
 const API_KEYS = {
-  amazon:    { host: 'real-time-amazon-data.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
-  flipkart:  { host: 'real-time-flipkart-data2.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
-  ebay:      { host: 'ebay-data-scraper.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
-  walmart:   { host: 'walmart-data.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
-  myntra:    { host: 'myntra-product-search.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' }
+  amazon:   { host: 'real-time-amazon-data.p.rapidapi.com',     key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
+  flipkart: { host: 'real-time-flipkart-data2.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
+  ebay:     { host: 'ebay-data-scraper.p.rapidapi.com',        key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
+  walmart:  { host: 'walmart-data.p.rapidapi.com',             key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
+  myntra:   { host: 'myntra-product-search.p.rapidapi.com',    key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' }
 };
 
 let allProducts = [];
+
+// Loader elements
+const loader = document.getElementById('loader');
+function showLoader() { loader.style.display = 'flex'; }
+function hideLoader() { loader.style.display = 'none'; }
+
+// Hide loader when page loads
+window.addEventListener('load', hideLoader);
 
 // Dark Mode Toggle
 const toggle = document.getElementById('darkModeToggle');
@@ -32,10 +40,10 @@ async function fetchPlatform(platform, query, country) {
     const items = json.data?.products || [];
     return items.map(p => ({
       title: p.product_title || p.title,
-      price: p.product_price || p.price?.raw,
-      image: p.product_photo || p.thumbnail,
-      url:   p.product_url   || p.url,
-      brand: p.product_brand || p.brand
+      price: p.product_price || p.price?.raw || 'N/A',
+      image: p.product_photo || p.thumbnail || '',
+      url:   p.product_url   || p.url || '#',
+      brand: p.product_brand || p.brand || ''
     }));
   } catch (e) {
     console.error(`Error ${platform}:`, e);
@@ -48,6 +56,8 @@ async function searchProducts() {
   const q       = document.getElementById('searchInput').value.trim();
   const country = document.getElementById('countrySelect').value;
   if (!q) return alert('Enter product name');
+
+  showLoader();
   document.getElementById('results').innerHTML = `<p>🔄 Searching for "${q}"...</p>`;
   allProducts = [];
 
@@ -58,6 +68,7 @@ async function searchProducts() {
 
   populateBrands();
   applyFiltersAndDisplay();
+  hideLoader();
 }
 
 // Populate Brand datalist
@@ -76,14 +87,18 @@ function applyFiltersAndDisplay() {
   const brand = document.getElementById('brandFilter').value.toLowerCase();
 
   items = items.filter(p => {
-    const priceNum = parseFloat((p.price || '').replace(/[^\d.]/g,'')) || 0;
+    const priceNum = parseFloat((p.price || '').replace(/[^\d.]/g, '')) || 0;
     return priceNum >= min 
         && priceNum <= max 
-        && (!brand || (p.brand || '').toLowerCase().includes(brand));
+        && (!brand || p.brand.toLowerCase().includes(brand));
   });
 
-  if (sort === 'low')  items.sort((a,b)=>parseFloat(a.price.replace(/[^\d.]/g,'')) - parseFloat(b.price.replace(/[^\d.]/g,'')));
-  if (sort === 'high') items.sort((a,b)=>parseFloat(b.price.replace(/[^\d.]/g,'')) - parseFloat(a.price.replace(/[^\d.]/g,'')));
+  if (sort === 'low')  {
+    items.sort((a,b) => parseFloat(a.price.replace(/[^\d.]/g,'')) - parseFloat(b.price.replace(/[^\d.]/g,'')));
+  }
+  if (sort === 'high') {
+    items.sort((a,b) => parseFloat(b.price.replace(/[^\d.]/g,'')) - parseFloat(a.price.replace(/[^\d.]/g,'')));
+  }
 
   displayResults(items);
 }
