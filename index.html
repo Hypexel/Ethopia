@@ -11,6 +11,11 @@
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
+  <!-- Alert Banner -->
+  <div class="alert-banner">
+    ⚠️ Currently only <strong>Amazon</strong> & <strong>Flipkart</strong> products are listed.
+  </div>
+
   <!-- Loader Overlay -->
   <div id="loader" class="loader-overlay">
     <div class="spinner"></div>
@@ -18,14 +23,8 @@
 
   <header class="site-header">
     <div class="logo">
-      <i class="fas fa-shopping-basket"></i>
-      <span>ShopSync</span>
+      <i class="fas fa-shopping-basket"></i> ShopSync
     </div>
-    <nav class="nav-links">
-      <a href="#trending">Trending</a>
-      <a href="#about">About</a>
-      <a href="#contact">Contact</a>
-    </nav>
     <button id="darkModeToggle" class="dark-toggle" title="Toggle Dark / Light">
       <i class="fas fa-moon"></i>
     </button>
@@ -34,7 +33,7 @@
   <main>
     <!-- Hero / Search Section -->
     <section class="hero">
-      <h1>Find the Best Deals <br/>Across All Shops</h1>
+      <h1>Find the Best Deals</h1>
       <div class="search-bar hero-search">
         <input type="text" id="searchInput" placeholder="🔍 Search for a product..." />
         <select id="countrySelect">
@@ -44,19 +43,6 @@
           <option value="CA">🇨🇦 Canada</option>
         </select>
         <button onclick="searchProducts()"><i class="fas fa-search"></i> Search</button>
-      </div>
-      <div id="recentSearches" class="recent-searches"></div>
-    </section>
-
-    <!-- Trending Categories -->
-    <section id="trending" class="trending">
-      <h2>🔥 Trending Categories</h2>
-      <div class="trending-list">
-        <button>Smartphones</button>
-        <button>Headphones</button>
-        <button>Laptops</button>
-        <button>Home Decor</button>
-        <button>Fitness</button>
       </div>
     </section>
 
@@ -81,11 +67,17 @@
 
     <!-- Results Grid -->
     <section id="results" class="results-grid"></section>
+
+    <!-- Pagination -->
+    <section class="pagination">
+      <button id="prevPage" onclick="changePage(-1)" disabled>« Prev</button>
+      <span id="pageIndicator">Page 1</span>
+      <button id="nextPage" onclick="changePage(1)" disabled>Next »</button>
+    </section>
   </main>
 
-  <footer id="contact" class="site-footer">
+  <footer class="site-footer">
     <p>&copy; 2025 ShopSync. All rights reserved.</p>
-    <p><a href="mailto:support@shopsync.com">support@shopsync.com</a></p>
   </footer>
 
   <script src="script.js"></script>
