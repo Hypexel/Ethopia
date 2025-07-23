@@ -1,5 +1,5 @@
 const apiKey = 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e';
-const apiHost = 'real-time-flipkart-data2.p.rapidapi.com';
+const apiHost = 'real-time-amazon-data.p.rapidapi.com';
 let originalProducts = [];
 
 // DARK MODE TOGGLE
