@@ -63,27 +63,91 @@ async function fetchPlatform(platform, query, country) {
 }
 
 // Main search
+async function fetchAllAmazon(query, country, maxPages = 10) {
+  const { host, key } = API_KEYS.amazon;
+  let all = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const url = `https://${host}/search?query=${encodeURIComponent(query)}&country=${country}&page=${page}`;
+    const res = await fetch(url, {
+      headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key }
+    });
+    const json = await res.json();
+    const items = json.data?.products || [];
+    if (!items.length) break;
+    all.push(...items.map(p => ({
+      title:    p.product_title  || p.title,
+      price:    p.product_price  || p.price?.raw || 'N/A',
+      image:    p.product_photo  || p.thumbnail  || '',
+      url:      p.product_url    || p.url       || '#',
+      brand:    p.product_brand  || p.brand     || '',
+      discount: (p.price?.savings?.percentage
+                   ? `-${p.price.savings.percentage}%`
+                   : '')
+    })));
+  }
+  return all;
+}
+
+// Fetch ALL pages from Flipkart (up to maxPages or until empty)
+async function fetchAllFlipkart(query, pincode = '400001', maxPages = 10) {
+  const { host, key } = API_KEYS.flipkart;
+  let all = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const url = `https://${host}/search?query=${encodeURIComponent(query)}&pincode=${pincode}&page=${page}`;
+    const res = await fetch(url, {
+      headers: { 'x-rapidapi-host': host, 'x-rapidapi-key': key }
+    });
+    const json = await res.json();
+    const items = json.data?.products || [];
+    if (!items.length) break;
+    all.push(...items.map(p => ({
+      title:    p.productBaseInfoV1?.title            || p.title,
+      price:    p.productBaseInfoV1?.flipkartSpecialPrice?.amount?.toString() 
+                  || p.productBaseInfoV1?.maximumRetailPrice?.amount?.toString()
+                  || 'N/A',
+      image:    p.productBaseInfoV1?.imageUrls?.['200x200'] || p.thumbnail || '',
+      url:      p.productBaseInfoV1?.productUrl       || p.url || '#',
+      brand:    p.productBaseInfoV1?.productBrand     || '',
+      discount: (() => {
+        const info = p.productBaseInfoV1;
+        if (info?.maximumRetailPrice?.amount && info?.flipkartSpecialPrice?.amount) {
+          const mrp = info.maximumRetailPrice.amount;
+          const sp  = info.flipkartSpecialPrice.amount;
+          return `-${Math.round((mrp - sp) / mrp * 100)}%`;
+        }
+        return '';
+      })()
+    })));
+  }
+  return all;
+}
+
+
+// 2) Updated main search
 async function searchProducts() {
   const q       = document.getElementById('searchInput').value.trim();
   const country = document.getElementById('countrySelect').value;
   if (!q) return alert('Enter a product name');
 
   showLoader();
-  document.getElementById('results').innerHTML = `<p>🔄 Searching "${q}"...<\/p>`;
-  allProducts = [];
   currentPage = 1;
+  document.getElementById('results').innerHTML = `<p>🔄 Searching "${q}"…</p>`;
 
-  const [amazon, flipkart] = await Promise.all([
-    fetchPlatform('amazon', q, country),
-    fetchPlatform('flipkart', q, country)
+  // Fetch ALL pages from Amazon and Flipkart
+  const [amazonResults, flipkartResults] = await Promise.all([
+    fetchAllAmazon(q, country, 20),         // up to 20 Amazon pages
+    fetchAllFlipkart(q, /*pincode=*/'400001', 20)  // up to 20 Flipkart pages
   ]);
-  allProducts = [...amazon, ...flipkart];
+
+  allProducts = [...amazonResults, ...flipkartResults];
 
   populateBrands();
   applyFiltersAndDisplay();
-  updatePagination();
+  updatePagination(allProducts.length);
   hideLoader();
 }
+
+
 
 // Populate brands
 function populateBrands() {
