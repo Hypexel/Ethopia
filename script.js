@@ -1,20 +1,17 @@
 // === CONFIGURE YOUR RAPIDAPI KEYS HERE ===
 const API_KEYS = {
-  amazon:   { host: 'real-time-amazon-data.p.rapidapi.com',     key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
-  flipkart: { host: 'real-time-flipkart-data2.p.rapidapi.com', key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
-  ebay:     { host: 'ebay-data-scraper.p.rapidapi.com',        key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
-  walmart:  { host: 'walmart-data.p.rapidapi.com',             key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' },
-  myntra:   { host: 'myntra-product-search.p.rapidapi.com',    key: 'aba9aeaf40msh620d3e13e35549cp1b2374jsna12c88960a1e' }
+  amazon:   { host: 'real-time-amazon-data.p.rapidapi.com',    key: 'YOUR_AMAZON_KEY' },
+  flipkart: { host: 'real-time-flipkart-data2.p.rapidapi.com', key: 'YOUR_FLIPKART_KEY' }
 };
 
 let allProducts = [];
+let currentPage = 1;
+const RESULTS_PER_PAGE = 12;
 
-// Loader elements
+// Loader
 const loader = document.getElementById('loader');
 function showLoader() { loader.style.display = 'flex'; }
 function hideLoader() { loader.style.display = 'none'; }
-
-// Hide loader when page loads
 window.addEventListener('load', hideLoader);
 
 // Dark Mode Toggle
@@ -28,7 +25,7 @@ toggle.addEventListener('click', () => {
   localStorage.darkMode = dark;
 });
 
-// Fetch helper
+// Fetch helper (only Amazon & Flipkart)
 async function fetchPlatform(platform, query, country) {
   const { host, key } = API_KEYS[platform];
   const url = `https://${host}/search?query=${encodeURIComponent(query)}&country=${country}`;
@@ -41,9 +38,9 @@ async function fetchPlatform(platform, query, country) {
     return items.map(p => ({
       title: p.product_title || p.title,
       price: p.product_price || p.price?.raw || 'N/A',
-      image: p.product_photo || p.thumbnail || '',
-      url:   p.product_url   || p.url || '#',
-      brand: p.product_brand || p.brand || ''
+      image: p.product_photo  || p.thumbnail  || '',
+      url:   p.product_url    || p.url        || '#',
+      brand: p.product_brand  || p.brand      || ''
     }));
   } catch (e) {
     console.error(`Error ${platform}:`, e);
@@ -51,23 +48,27 @@ async function fetchPlatform(platform, query, country) {
   }
 }
 
-// Main search: query all platforms in parallel
+// Main search: parallel Amazon+Flipkart
 async function searchProducts() {
   const q       = document.getElementById('searchInput').value.trim();
   const country = document.getElementById('countrySelect').value;
-  if (!q) return alert('Enter product name');
+  if (!q) return alert('Enter a product name');
 
   showLoader();
-  document.getElementById('results').innerHTML = `<p>🔄 Searching for "${q}"...</p>`;
+  document.getElementById('results').innerHTML = `<p>🔄 Searching "${q}"...</p>`;
   allProducts = [];
+  currentPage = 1;
 
-  const platforms = Object.keys(API_KEYS);
-  const promises = platforms.map(p => fetchPlatform(p, q, country));
-  const resultsArr = await Promise.all(promises);
-  allProducts = resultsArr.flat();
+  // Only two platforms now
+  const [amazon, flipkart] = await Promise.all([
+    fetchPlatform('amazon', q, country),
+    fetchPlatform('flipkart', q, country)
+  ]);
+  allProducts = [...amazon, ...flipkart];
 
   populateBrands();
   applyFiltersAndDisplay();
+  updatePagination();
   hideLoader();
 }
 
@@ -78,7 +79,7 @@ function populateBrands() {
   dl.innerHTML = brands.map(b => `<option value="${b}">`).join('');
 }
 
-// Filter & sort, then render
+// Filter, sort, paginate, then render
 function applyFiltersAndDisplay() {
   let items = [...allProducts];
   const min   = parseFloat(document.getElementById('minPrice').value) || 0;
@@ -86,21 +87,24 @@ function applyFiltersAndDisplay() {
   const sort  = document.getElementById('sortSelect').value;
   const brand = document.getElementById('brandFilter').value.toLowerCase();
 
+  // Filter
   items = items.filter(p => {
-    const priceNum = parseFloat((p.price || '').replace(/[^\d.]/g, '')) || 0;
-    return priceNum >= min 
-        && priceNum <= max 
-        && (!brand || p.brand.toLowerCase().includes(brand));
+    const priceNum = parseFloat((p.price || '').replace(/[^\d.]/g,'')) || 0;
+    return priceNum >= min &&
+      priceNum <= max &&
+      (!brand || p.brand.toLowerCase().includes(brand));
   });
 
-  if (sort === 'low')  {
-    items.sort((a,b) => parseFloat(a.price.replace(/[^\d.]/g,'')) - parseFloat(b.price.replace(/[^\d.]/g,'')));
-  }
-  if (sort === 'high') {
-    items.sort((a,b) => parseFloat(b.price.replace(/[^\d.]/g,'')) - parseFloat(a.price.replace(/[^\d.]/g,'')));
-  }
+  // Sort
+  if (sort === 'low')  items.sort((a,b)=>parseFloat(a.price.replace(/[^\d.]/g,'')) - parseFloat(b.price.replace(/[^\d.]/g,'')));
+  if (sort === 'high') items.sort((a,b)=>parseFloat(b.price.replace(/[^\d.]/g,'')) - parseFloat(a.price.replace(/[^\d.]/g,'')));
 
-  displayResults(items);
+  // Paginate
+  const start = (currentPage - 1) * RESULTS_PER_PAGE;
+  const pageItems = items.slice(start, start + RESULTS_PER_PAGE);
+
+  displayResults(pageItems);
+  updatePagination(items.length);
 }
 
 // Render cards
@@ -125,6 +129,32 @@ function displayResults(arr) {
   });
 }
 
+// Pagination controls
+function updatePagination(total = null) {
+  const prev = document.getElementById('prevPage');
+  const next = document.getElementById('nextPage');
+  const indicator = document.getElementById('pageIndicator');
+
+  const count = total === null
+    ? Math.ceil(allProducts.length / RESULTS_PER_PAGE)
+    : Math.ceil(total / RESULTS_PER_PAGE);
+
+  prev.disabled = currentPage <= 1;
+  next.disabled = currentPage >= count;
+  indicator.textContent = `Page ${currentPage} of ${count}`;
+}
+
+function changePage(delta) {
+  currentPage += delta;
+  applyFiltersAndDisplay();
+}
+
 // Reapply on filter changes
 ['sortSelect','minPrice','maxPrice','brandFilter']
-  .forEach(id => document.getElementById(id).addEventListener('input', applyFiltersAndDisplay));
+  .forEach(id => document.getElementById(id)
+    .addEventListener('input', () => {
+      currentPage = 1;
+      applyFiltersAndDisplay();
+      updatePagination();
+    })
+);
