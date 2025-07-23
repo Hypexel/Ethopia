@@ -21,11 +21,6 @@ toggle.addEventListener('click', () => {
   const dark = document.body.classList.contains('dark');
   toggle.textContent = dark ? '☀️' : '🌙';
   localStorage.darkMode = dark;
-
-//back to top
-const backBtn = document.getElementById('backToTop');
-window.addEventListener('scroll', () => {
-  backBtn.classList.toggle('show', window.scrollY > window.innerHeight);
 });
 
 // Fetch one page from a given platform
@@ -169,6 +164,11 @@ function updatePagination() {
   document.getElementById('prevPage').disabled = currentPage<=1;
   document.getElementById('pageIndicator').textContent = `Page ${currentPage}`;
 }
+
+const backBtn = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+  backBtn.classList.toggle('show', window.scrollY > window.innerHeight);
+});
 
 // Re-run filters on input change
 ['sortSelect','minPrice','maxPrice','brandFilter']
