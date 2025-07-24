@@ -72,67 +72,53 @@
   </div>
   <div id="results"></div>
 
-  <script>
-    const TOKEN = "apify_api_6ARG3wKwukfXgjatHQ2IcnsM3mfo9p3l7SU9";
+ <script>
+  const TOKEN = "apify_api_6ARG3wKwukfXgjatHQ2IcnsM3mfo9p3l7SU9";
+  const TASK_ID = "junglee~free-amazon-product-scraper"; // ensure identity
+  const form = document.getElementById("searchForm");
+  const resultsEl = document.getElementById("results");
 
-    async function searchAmazon() {
-      const keyword = document.getElementById("keyword").value.trim();
-      if (!keyword) return alert("Enter a search term");
+  async function searchAmazon() {
+    const keyword = document.getElementById("keyword").value.trim();
+    if (!keyword) return alert("Enter a search term");
 
-      document.getElementById("results").innerHTML = "⏳ Loading...";
+    resultsEl.innerHTML = "⏳ Loading...";
+    console.clear();
 
-      try {
-        // Start the actor run
-        const runRes = await fetch("https://api.apify.com/v2/actor-tasks/XVDTQc4a7MDTqSTMJ/runs?token=" + TOKEN, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ input: { keyword: keyword } })
-        });
-        const runData = await runRes.json();
+    try {
+      console.log("> Starting actor run for:", keyword);
+      const res = await fetch(`https://api.apify.com/v2/acts/${TASK_ID}/runs/run-sync-get-dataset-items?token=${TOKEN}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ search: keyword, maxItems: 10 })
+      });
+      const items = await res.json();
+      console.log("> Actor response:", items);
 
-        const runId = runData.data.id;
-        console.log("Actor started, waiting for results...");
-
-        // Poll until run is finished
-        let status = "RUNNING";
-        while (status !== "SUCCEEDED" && status !== "FAILED" && status !== "ABORTED") {
-          await new Promise(r => setTimeout(r, 5000)); // wait 5s
-          const check = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${TOKEN}`);
-          const checkData = await check.json();
-          status = checkData.data.status;
-        }
-
-        if (status !== "SUCCEEDED") {
-          document.getElementById("results").innerHTML = "❌ Failed to fetch data.";
-          return;
-        }
-
-        // Get results from dataset
-        const datasetId = runData.data.defaultDatasetId;
-        const itemsRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${TOKEN}`);
-        const items = await itemsRes.json();
-
-        if (!items || items.length === 0) {
-          document.getElementById("results").innerHTML = "⚠️ No products found.";
-          return;
-        }
-
-        // Display results
-        const html = items.map(item => `
-          <div class="product">
-            <img src="${item.image || ''}" alt="Product Image">
-            <h3>${item.title || 'No Title'}</h3>
-            <p>${item.price || 'No Price'}</p>
-            <a href="${item.url || '#'}" target="_blank">View on Amazon</a>
-          </div>
-        `).join('');
-        document.getElementById("results").innerHTML = html;
-
-      } catch (e) {
-        console.error(e);
-        document.getElementById("results").innerHTML = "🚫 Error fetching data.";
+      if (!Array.isArray(items)) throw new Error("Response not an array");
+      if (items.length === 0) {
+        resultsEl.innerHTML = "⚠️ No products found.";
+        return;
       }
+
+      // Sort and render
+      items.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+      resultsEl.innerHTML = items.map(item => `
+        <div class="product">
+          <img src="${item.image}" alt="" onerror="this.src='https://via.placeholder.com/200x180?text=No+Image'">
+          <h3>${item.title}</h3>
+          <p>${item.price}</p>
+          <a href="${item.url}" target="_blank">View on Amazon</a>
+        </div>
+      `).join("");
+
+    } catch (err) {
+      console.error("❌ Error flow:", err);
+      resultsEl.innerHTML = "🚫 Error fetching data. Check console.";
     }
-  </script>
+  }
+
+  document.querySelector("button").onclick = searchAmazon;
+</script>
 </body>
 </html>
