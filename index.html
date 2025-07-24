@@ -1,73 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Universal Product Finder</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Amazon Search Demo</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="alert-banner">
-    ⚠️ Currently only <strong>Amazon</strong> & <strong>Flipkart</strong> products are listed.
-  </div>
-
-  <div id="loader" class="loader-overlay">
-    <div class="spinner"></div>
-  </div>
-
-  <header class="site-header">
-    <div class="logo"><i class="fas fa-shopping-basket"></i> ShopSync</div>
-    <button id="darkModeToggle" class="dark-toggle" title="Toggle Dark / Light">🌙</button>
+  <header>
+    <h1>Amazon Search (via Apps Script)</h1>
+    <form id="search-form">
+      <input type="text" id="query" placeholder="Search for products…" required>
+      <button type="submit">Search</button>
+    </form>
   </header>
-
   <main>
-    <section class="hero">
-      <h1>Find the Best Deals</h1>
-      <div class="search-bar hero-search">
-        <input type="text" id="searchInput" placeholder="🔍 Search for a product..." />
-        <select id="countrySelect">
-          <option value="US">🇺🇸 US</option>
-          <option value="IN">🇮🇳 India</option>
-          <option value="GB">🇬🇧 UK</option>
-          <option value="CA">🇨🇦 Canada</option>
-        </select>
-        <button onclick="searchProducts()"><i class="fas fa-search"></i> Search</button>
-      </div>
-    </section>
-
-    <section class="filters">
-      <label>Sort:
-        <select id="sortSelect">
-          <option value="relevance">Relevance</option>
-          <option value="low">Low → High</option>
-          <option value="high">High → Low</option>
-        </select>
-      </label>
-      <label>Price:
-        <input type="number" id="minPrice" placeholder="Min" />
-        <input type="number" id="maxPrice" placeholder="Max" />
-      </label>
-      <label>Brand:
-        <input type="text" id="brandFilter" placeholder="Brand" list="brand-list" />
-        <datalist id="brand-list"></datalist>
-      </label>
-    </section>
-
-    <section id="results" class="results-grid"></section>
-
-    <section class="pagination">
-      <button id="prevPage" onclick="changePage(-1)" disabled>« Prev</button>
-      <span id="pageIndicator">Page 1</span>
-      <button id="nextPage" onclick="changePage(1)">Next »</button>
-    </section>
+    <div id="results"></div>
   </main>
-
-  <footer class="site-footer">
-    <p>&copy; 2025 ShopSync. All rights reserved.</p>
-  </footer>
-
   <script src="script.js"></script>
 </body>
 </html>
