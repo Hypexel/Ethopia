@@ -1,78 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Amazon Product Search — Apify</title>
-  <style>
-    body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 20px; text-align: center; }
-    #searchForm { margin-bottom: 20px; }
-    input, button { padding: 10px; font-size: 16px; }
-    input { width: 300px; }
-    button { background: #ff9900; border: none; cursor: pointer; }
-    #results { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 15px; }
-    .product { background: white; padding: 10px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-    .product img { max-width: 100%; height: 180px; object-fit: contain; }
-    .product h3 { font-size: 1em; margin: 10px 0; }
-    .product p { font-weight: bold; color: green; margin: 5px 0; }
-    .product a { display: inline-block; margin-top: 5px; color: #0073bb; text-decoration: none; }
-  </style>
-</head>
-<body>
-  <h1>Amazon Product Search</h1>
-  <div id="searchForm">
-    <input type="text" id="keyword" placeholder="Enter search term...">
-    <button onclick="searchAmazon()">Search</button>
-  </div>
-  <div id="results"></div>
+<script>
+  const TOKEN = "apify_api_6ARG3wKwukfXgjatHQ2IcnsM3mfo9p3l7SU9";
+  const TASK_ID = "junglee~free-amazon-product-scraper"; // ensure identity
+  const form = document.getElementById("searchForm");
+  const resultsEl = document.getElementById("results");
 
-  <script>
-    const TOKEN    = 'apify_api_6ARG3wKwukfXgjatHQ2IcnsM3mfo9p3l7SU9';
-    const ACTOR_ID = 'junglee/free-amazon-product-scraper';
+  async function searchAmazon() {
+    const keyword = document.getElementById("keyword").value.trim();
+    if (!keyword) return alert("Enter a search term");
 
-    async function searchAmazon() {
-      const query = document.getElementById('keyword').value.trim();
-      if (!query) return alert('Please type something.');
+    resultsEl.innerHTML = "⏳ Loading...";
+    console.clear();
 
-      document.getElementById('results').innerHTML = '<p>Loading…</p>';
+    try {
+      console.log("> Starting actor run for:", keyword);
+      const res = await fetch(`https://api.apify.com/v2/acts/${TASK_ID}/runs/run-sync-get-dataset-items?token=${TOKEN}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ search: keyword, maxItems: 10 })
+      });
+      const items = await res.json();
+      console.log("> Actor response:", items);
 
-      try {
-        const url = `https://api.apify.com/v2/acts/${ACTOR_ID.replace('/', '~')}/run-sync-get-dataset-items?token=${TOKEN}`;
-
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            categoryUrls: [
-              { url: `https://www.amazon.com/s?k=${encodeURIComponent(query)}` }
-            ],
-            maxItemsPerStartUrl: 10
-          })
-        });
-
-        const items = await res.json();
-        if (!Array.isArray(items)) throw new Error('Unexpected response format');
-
-        if (items.length === 0) {
-          document.getElementById('results').innerHTML = '<p>No results found.</p>';
-          return;
-        }
-
-        items.sort((a, b) => (a?.price?.value || 0) - (b?.price?.value || 0));
-
-        document.getElementById('results').innerHTML = items.map(item => `
-          <div class="product">
-            <img src="${item.thumbnailImage || ''}" onerror="this.src='https://via.placeholder.com/200x180?text=No+Image'">
-            <h3>${item.title || 'No Title'}</h3>
-            <p>${item.price?.currency || ''}${item.price?.value ?? 'N/A'}</p>
-            <a href="${item.url}" target="_blank">View on Amazon</a>
-          </div>
-        `).join('');
-
-      } catch (err) {
-        console.error('Error:', err);
-        document.getElementById('results').innerHTML = '<p style="color:red;">Error fetching data.</p>';
+      if (!Array.isArray(items)) throw new Error("Response not an array");
+      if (items.length === 0) {
+        resultsEl.innerHTML = "⚠️ No products found.";
+        return;
       }
+
+      // Sort and render
+      items.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+      resultsEl.innerHTML = items.map(item => `
+        <div class="product">
+          <img src="${item.image}" alt="" onerror="this.src='https://via.placeholder.com/200x180?text=No+Image'">
+          <h3>${item.title}</h3>
+          <p>${item.price}</p>
+          <a href="${item.url}" target="_blank">View on Amazon</a>
+        </div>
+      `).join("");
+
+    } catch (err) {
+      console.error("❌ Error flow:", err);
+      resultsEl.innerHTML = "🚫 Error fetching data. Check console.";
     }
-  </script>
-</body>
-</html>
+  }
+
+  document.querySelector("button").onclick = searchAmazon;
+</script>
